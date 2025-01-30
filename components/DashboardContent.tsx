@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { createBrowserClient } from "@supabase/ssr";
 import { useRouter } from "next/navigation";
 import {
@@ -192,15 +192,18 @@ export default function DashboardContent() {
     setSelectedItem(selectedItem === item.id ? null : item.id);
   };
 
-  const handleItemDoubleClick = (item: Item) => {
-    if ("isGroup" in item) {
-      setCurrentPath([...currentPath, item.id]);
-    } else {
-      router.push(`/tier-list/${item.id}`);
-    }
-  };
+  const handleItemDoubleClick = useCallback(
+    (item: Item) => {
+      if ("isGroup" in item) {
+        setCurrentPath([...currentPath, item.id]);
+      } else {
+        router.push(`/tier-list/${item.id}`);
+      }
+    },
+    [currentPath, router]
+  );
 
-  const getCurrentItems = (): Item[] => {
+  const getCurrentItems = useCallback((): Item[] => {
     let currentItems = items;
     for (const groupId of currentPath) {
       const group = currentItems.find((item) => "isGroup" in item && item.id === groupId) as GroupWithItems;
@@ -211,7 +214,7 @@ export default function DashboardContent() {
       }
     }
     return currentItems;
-  };
+  }, [items, currentPath]);
 
   const navigateUp = () => {
     setCurrentPath(currentPath.slice(0, -1));
@@ -229,7 +232,7 @@ export default function DashboardContent() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedItem, currentPath]);
+  }, [selectedItem, currentPath, getCurrentItems, handleItemDoubleClick]);
 
   return (
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
