@@ -47,7 +47,7 @@ export default function Sidebar({ propertyCount, onPropertyCountChange }: Sideba
   };
 
   return (
-    <aside className="w-[25%] min-w-[250px] p-4 bg-slate-50 border-l overflow-auto">
+    <aside className="w-[20%] min-w-[200px] bg-slate-50 border-l overflow-auto">
       <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="editor">Editor</TabsTrigger>
