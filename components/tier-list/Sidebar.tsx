@@ -7,6 +7,7 @@ import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { MinusCircle, PlusCircle } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
 
 interface SidebarProps {
   propertyCount: number;
@@ -21,6 +22,7 @@ export default function Sidebar({ propertyCount, onPropertyCountChange }: Sideba
       .map((_, i) => `Property ${i + 1}`)
   );
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [tierListName, setTierListName] = useState("Headphone Comparison");
 
   useEffect(() => {
     // Update property names when count changes
@@ -56,61 +58,84 @@ export default function Sidebar({ propertyCount, onPropertyCountChange }: Sideba
         </TabsList>
         <TabsContent value="editor">
           <Card className="p-3">
-            <h3 className="text-lg font-semibold mb-3">Current Item Editor</h3>
-            <div className="flex items-center gap-2 mb-3">
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => handlePropertyCountChange(false)}
-                disabled={propertyCount <= 3}
-              >
-                <MinusCircle className="w-4 h-4" />
-              </Button>
-              <span className="min-w-[4rem] text-center">{propertyCount} props</span>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => handlePropertyCountChange(true)}
-                disabled={propertyCount >= 8}
-              >
-                <PlusCircle className="w-4 h-4" />
-              </Button>
-            </div>
-            <Input className="mb-3" placeholder="Item name" />
-            <div className="space-y-4">
-              {Array.from({ length: propertyCount }, (_, i) => (
-                <div key={i}>
-                  <div
-                    onClick={() => setEditingIndex(i)}
-                    className="mb-1 cursor-pointer hover:bg-slate-100 transition-colors py-1 px-1"
-                  >
-                    {editingIndex === i ? (
-                      <input
-                        type="text"
-                        value={propertyNames[i]}
-                        onChange={(e) => {
-                          const newNames = [...propertyNames];
-                          newNames[i] = e.target.value;
-                          setPropertyNames(newNames);
-                        }}
-                        onBlur={() => setEditingIndex(null)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            setEditingIndex(null);
-                          }
-                        }}
-                        className="w-full bg-transparent border-0 outline-none border-b-2 border-solid border-slate-400"
-                        autoFocus
-                      />
-                    ) : (
-                      <span>{propertyNames[i]}</span>
-                    )}
+            <div className="space-y-6">
+              {/* General Settings Section */}
+              <div>
+                <h3 className="text-sm font-medium text-slate-500 mb-3">General Settings</h3>
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-sm mb-1 block">Tier List Name</label>
+                    <Input
+                      value={tierListName}
+                      onChange={(e) => setTierListName(e.target.value)}
+                      placeholder="Enter tier list name"
+                    />
                   </div>
-                  <Slider defaultValue={[5]} max={10} step={1} />
+                  <div>
+                    <label className="text-sm mb-1 block">Properties</label>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => handlePropertyCountChange(false)}
+                        disabled={propertyCount <= 3}
+                      >
+                        <MinusCircle className="w-4 h-4" />
+                      </Button>
+                      <span className="min-w-[4rem] text-center">{propertyCount} props</span>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => handlePropertyCountChange(true)}
+                        disabled={propertyCount >= 8}
+                      >
+                        <PlusCircle className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
                 </div>
-              ))}
+              </div>
+
+              <Separator />
+
+              {/* Properties Section */}
+              <div>
+                <h3 className="text-sm font-medium text-slate-500 mb-3">Properties</h3>
+                <div className="space-y-4">
+                  {Array.from({ length: propertyCount }, (_, i) => (
+                    <div key={i}>
+                      <div
+                        onClick={() => setEditingIndex(i)}
+                        className="mb-1 cursor-pointer hover:bg-slate-100 transition-colors py-1 px-1"
+                      >
+                        {editingIndex === i ? (
+                          <input
+                            type="text"
+                            value={propertyNames[i]}
+                            onChange={(e) => {
+                              const newNames = [...propertyNames];
+                              newNames[i] = e.target.value;
+                              setPropertyNames(newNames);
+                            }}
+                            onBlur={() => setEditingIndex(null)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                setEditingIndex(null);
+                              }
+                            }}
+                            className="w-full bg-transparent border-0 outline-none border-b-2 border-solid border-slate-400"
+                            autoFocus
+                          />
+                        ) : (
+                          <span>{propertyNames[i]}</span>
+                        )}
+                      </div>
+                      <Slider defaultValue={[5]} max={10} step={1} />
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
-            <Button className="w-full mt-4">Save Changes</Button>
           </Card>
         </TabsContent>
         <TabsContent value="sorting">

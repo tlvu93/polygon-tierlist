@@ -6,12 +6,7 @@ import MainContent from "./MainContent";
 import Sidebar from "./Sidebar";
 import DiagramList from "./DiagramList";
 
-interface Diagram {
-  id: string;
-  name: string;
-  propertyCount: number;
-  thumbnail?: string;
-}
+import { Diagram } from "./types";
 
 interface TierListLayoutProps {
   tierListName?: string;
@@ -24,9 +19,9 @@ export default function TierListLayout({ tierListName = "Headphone Comparison" }
   // Mock data - replace with real data from your backend
   const diagrams = useMemo<Diagram[]>(
     () => [
-      { id: "1", name: "Main Diagram", propertyCount: 3 },
-      { id: "2", name: "Alternative View", propertyCount: 4 },
-      { id: "3", name: "Simplified", propertyCount: 3 },
+      { id: "1", name: "Main Diagram" },
+      { id: "2", name: "Alternative View" },
+      { id: "3", name: "Simplified" },
     ],
     []
   );

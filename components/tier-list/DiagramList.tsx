@@ -1,11 +1,6 @@
 "use client";
 
-interface Diagram {
-  id: string;
-  name: string;
-  propertyCount: number;
-  thumbnail?: string;
-}
+import { Diagram } from "./types";
 
 interface DiagramListProps {
   diagrams: Diagram[];
@@ -36,7 +31,7 @@ export default function DiagramList({ diagrams, currentDiagramId, onDiagramSelec
                 )}
                 <div className="flex-1 min-w-0">
                   <div className="font-medium truncate">{diagram.name}</div>
-                  <div className="text-xs text-slate-500">{diagram.propertyCount} properties</div>
+                  <div className="text-xs text-slate-500">Diagram {diagram.id}</div>
                 </div>
               </div>
             </div>
