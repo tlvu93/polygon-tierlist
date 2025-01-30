@@ -1,0 +1,158 @@
+"use client";
+
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Slider } from "@/components/ui/slider";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { MinusCircle, PlusCircle } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+import { Diagram, DiagramProperty } from "./types";
+
+interface SidebarProps {
+  propertyCount: number;
+  onPropertyCountChange: (count: number) => void;
+  currentDiagram?: Diagram;
+  propertyNames: string[];
+  onPropertyChange: (index: number, change: Partial<DiagramProperty>) => void;
+}
+
+export default function Sidebar({
+  propertyCount,
+  onPropertyCountChange,
+  currentDiagram,
+  propertyNames,
+  onPropertyChange,
+}: SidebarProps) {
+  const [currentTab, setCurrentTab] = useState("editor");
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+
+  const handlePropertyCountChange = (increment: boolean) => {
+    const newCount = increment ? propertyCount + 1 : propertyCount - 1;
+    onPropertyCountChange(Math.min(Math.max(newCount, 3), 8)); // Clamp between 3 and 8
+  };
+
+  return (
+    <aside className="w-[20%] min-w-[200px] bg-slate-100 border-l overflow-auto">
+      <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="editor">Editor</TabsTrigger>
+          <TabsTrigger value="sorting">Sorting</TabsTrigger>
+          <TabsTrigger value="sharing">Sharing</TabsTrigger>
+        </TabsList>
+        <TabsContent value="editor">
+          <Card className="p-3">
+            <div className="space-y-6">
+              {/* General Settings Section */}
+              <div>
+                <h3 className="text-sm font-medium text-slate-500 mb-3">General Settings</h3>
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-sm mb-1 block">Properties</label>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => handlePropertyCountChange(false)}
+                        disabled={propertyCount <= 3}
+                      >
+                        <MinusCircle className="w-4 h-4" />
+                      </Button>
+                      <span className="min-w-[4rem] text-center">{propertyCount} props</span>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => handlePropertyCountChange(true)}
+                        disabled={propertyCount >= 8}
+                      >
+                        <PlusCircle className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Properties Section */}
+              <div>
+                <h3 className="text-sm font-medium text-slate-500 mb-3">Properties</h3>
+                <div className="space-y-4">
+                  {Array.from({ length: propertyCount }, (_, i) => (
+                    <div key={i}>
+                      <div
+                        onClick={() => setEditingIndex(i)}
+                        className="mb-1 cursor-pointer hover:bg-slate-100 transition-colors py-1 px-1"
+                      >
+                        {editingIndex === i ? (
+                          <input
+                            type="text"
+                            value={propertyNames[i]}
+                            onChange={(e) => {
+                              onPropertyChange(i, { name: e.target.value });
+                            }}
+                            onBlur={() => setEditingIndex(null)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                setEditingIndex(null);
+                              }
+                            }}
+                            className="w-full bg-transparent border-0 outline-none border-b-2 border-solid border-slate-400"
+                            autoFocus
+                          />
+                        ) : (
+                          <span>{propertyNames[i]}</span>
+                        )}
+                      </div>
+                      <Slider
+                        value={[currentDiagram?.properties[i]?.value ?? 5]}
+                        onValueChange={([value]) => {
+                          onPropertyChange(i, { value });
+                        }}
+                        max={10}
+                        step={1}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </Card>
+        </TabsContent>
+        <TabsContent value="sorting">
+          <Card className="p-3">
+            <h3 className="text-lg font-semibold mb-3">Sorting & Formulas</h3>
+            <div className="space-y-4">
+              <div className="grid gap-2">
+                <label className="text-sm font-medium">Formula</label>
+                <select className="w-full p-2 border rounded-md">
+                  <option>Weighted Average</option>
+                  <option>Simple Average</option>
+                </select>
+              </div>
+              <Button variant="outline" className="w-full">
+                New Formula
+              </Button>
+            </div>
+          </Card>
+        </TabsContent>
+        <TabsContent value="sharing">
+          <Card className="p-3">
+            <h3 className="text-lg font-semibold mb-3">Sharing & Export</h3>
+            <div className="space-y-4">
+              <Button variant="outline" className="w-full">
+                Copy Link
+              </Button>
+              <Button variant="outline" className="w-full">
+                Export as PNG
+              </Button>
+              <Button variant="outline" className="w-full">
+                Export as CSV
+              </Button>
+            </div>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </aside>
+  );
+}

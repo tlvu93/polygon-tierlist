@@ -1,27 +1,85 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react"
+import { useState, useMemo } from "react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { ChevronLeft, ChevronRight, Plus, MinusCircle, PlusCircle } from "lucide-react";
 
-const mockData = [
-  { id: 1, name: "Sony XM5", comfort: 9, sound: 8, battery: 10 },
-  { id: 2, name: "Bose QC45", comfort: 8, sound: 7, battery: 9 },
-  { id: 3, name: "AirPods Max", comfort: 7, sound: 9, battery: 8 },
-]
+interface TierListItem {
+  id: number;
+  name: string;
+  [key: `property${number}`]: number;
+}
+
+const generateMockData = (propertyCount: number): TierListItem[] => {
+  const properties = Array.from({ length: propertyCount }, (_, i) => `property${i + 1}`);
+  return [
+    {
+      id: 1,
+      name: "Sony XM5",
+      ...Object.fromEntries(properties.map((prop) => [prop, Math.floor(Math.random() * 10) + 1])),
+    },
+    {
+      id: 2,
+      name: "Bose QC45",
+      ...Object.fromEntries(properties.map((prop) => [prop, Math.floor(Math.random() * 10) + 1])),
+    },
+    {
+      id: 3,
+      name: "AirPods Max",
+      ...Object.fromEntries(properties.map((prop) => [prop, Math.floor(Math.random() * 10) + 1])),
+    },
+  ];
+};
 
 export default function MainContent() {
-  const [view, setView] = useState<"diagram" | "table">("diagram")
+  const [view, setView] = useState<"diagram" | "table">("diagram");
+  const [propertyCount, setPropertyCount] = useState(3);
+
+  const mockData = useMemo(() => generateMockData(propertyCount), [propertyCount]);
+  const properties = useMemo(
+    () => Array.from({ length: propertyCount }, (_, i) => `Property ${i + 1}`),
+    [propertyCount]
+  );
+
+  const handlePropertyCountChange = (increment: boolean) => {
+    setPropertyCount((prev) => {
+      const newCount = increment ? prev + 1 : prev - 1;
+      return Math.min(Math.max(newCount, 3), 8); // Clamp between 3 and 8
+    });
+  };
 
   return (
     <main className="flex-1 p-6 overflow-auto">
       <Card className="p-6">
-        <div className="flex justify-between mb-4">
-          <Button variant="outline" onClick={() => setView(view === "diagram" ? "table" : "diagram")}>
-            {view === "diagram" ? "Switch to Table" : "Switch to Diagram"}
-          </Button>
+        <div className="flex justify-between items-center mb-4">
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => setView(view === "diagram" ? "table" : "diagram")}>
+              {view === "diagram" ? "Switch to Table" : "Switch to Diagram"}
+            </Button>
+
+            <div className="flex items-center gap-2 ml-4">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => handlePropertyCountChange(false)}
+                disabled={propertyCount <= 3}
+              >
+                <MinusCircle className="w-4 h-4" />
+              </Button>
+              <span className="min-w-[4rem] text-center">{propertyCount} props</span>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => handlePropertyCountChange(true)}
+                disabled={propertyCount >= 8}
+              >
+                <PlusCircle className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+
           <Button variant="default">
             <Plus className="w-4 h-4 mr-2" />
             Add Item
@@ -43,18 +101,18 @@ export default function MainContent() {
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
-                <TableHead>Comfort</TableHead>
-                <TableHead>Sound</TableHead>
-                <TableHead>Battery</TableHead>
+                {properties.map((prop, index) => (
+                  <TableHead key={index}>{prop}</TableHead>
+                ))}
               </TableRow>
             </TableHeader>
             <TableBody>
               {mockData.map((item) => (
                 <TableRow key={item.id}>
                   <TableCell>{item.name}</TableCell>
-                  <TableCell>{item.comfort}</TableCell>
-                  <TableCell>{item.sound}</TableCell>
-                  <TableCell>{item.battery}</TableCell>
+                  {properties.map((prop, index) => (
+                    <TableCell key={index}>{item[`property${index + 1}`]}</TableCell>
+                  ))}
                 </TableRow>
               ))}
             </TableBody>
@@ -62,6 +120,5 @@ export default function MainContent() {
         )}
       </Card>
     </main>
-  )
+  );
 }
-
