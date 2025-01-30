@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ChevronLeft, ChevronRight, Plus, MinusCircle, PlusCircle } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 
 interface TierListItem {
   id: number;
@@ -33,9 +33,12 @@ const generateMockData = (propertyCount: number): TierListItem[] => {
   ];
 };
 
-export default function MainContent() {
+interface MainContentProps {
+  propertyCount: number;
+}
+
+export default function MainContent({ propertyCount }: MainContentProps) {
   const [view, setView] = useState<"diagram" | "table">("diagram");
-  const [propertyCount, setPropertyCount] = useState(3);
 
   const mockData = useMemo(() => generateMockData(propertyCount), [propertyCount]);
   const properties = useMemo(
@@ -43,43 +46,13 @@ export default function MainContent() {
     [propertyCount]
   );
 
-  const handlePropertyCountChange = (increment: boolean) => {
-    setPropertyCount((prev) => {
-      const newCount = increment ? prev + 1 : prev - 1;
-      return Math.min(Math.max(newCount, 3), 8); // Clamp between 3 and 8
-    });
-  };
-
   return (
     <main className="flex-1 p-6 overflow-auto">
       <Card className="p-6">
         <div className="flex justify-between items-center mb-4">
-          <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => setView(view === "diagram" ? "table" : "diagram")}>
-              {view === "diagram" ? "Switch to Table" : "Switch to Diagram"}
-            </Button>
-
-            <div className="flex items-center gap-2 ml-4">
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => handlePropertyCountChange(false)}
-                disabled={propertyCount <= 3}
-              >
-                <MinusCircle className="w-4 h-4" />
-              </Button>
-              <span className="min-w-[4rem] text-center">{propertyCount} props</span>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => handlePropertyCountChange(true)}
-                disabled={propertyCount >= 8}
-              >
-                <PlusCircle className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-
+          <Button variant="outline" onClick={() => setView(view === "diagram" ? "table" : "diagram")}>
+            {view === "diagram" ? "Switch to Table" : "Switch to Diagram"}
+          </Button>
           <Button variant="default">
             <Plus className="w-4 h-4 mr-2" />
             Add Item
