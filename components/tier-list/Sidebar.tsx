@@ -8,13 +8,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { MinusCircle, PlusCircle } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { DiagramStats } from "./types";
 
 interface SidebarProps {
   propertyCount: number;
   onPropertyCountChange: (count: number) => void;
+  currentStats?: DiagramStats;
+  onStatsChange?: (stats: DiagramStats) => void;
 }
 
-export default function Sidebar({ propertyCount, onPropertyCountChange }: SidebarProps) {
+export default function Sidebar({ propertyCount, onPropertyCountChange, currentStats, onStatsChange }: SidebarProps) {
   const [currentTab, setCurrentTab] = useState("editor");
   const [propertyNames, setPropertyNames] = useState<string[]>(
     Array(propertyCount)
@@ -95,6 +98,87 @@ export default function Sidebar({ propertyCount, onPropertyCountChange }: Sideba
                   </div>
                 </div>
               </div>
+
+              <Separator />
+
+              {/* Stats Section */}
+              {currentStats && onStatsChange && (
+                <div>
+                  <h3 className="text-sm font-medium text-slate-500 mb-3">Stats</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-sm mb-1 block">Fighting</label>
+                      <Slider
+                        value={[currentStats.fighting]}
+                        onValueChange={([value]) =>
+                          onStatsChange({
+                            ...currentStats,
+                            fighting: value,
+                          })
+                        }
+                        max={10}
+                        step={1}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm mb-1 block">Farming</label>
+                      <Slider
+                        value={[currentStats.farming]}
+                        onValueChange={([value]) =>
+                          onStatsChange({
+                            ...currentStats,
+                            farming: value,
+                          })
+                        }
+                        max={10}
+                        step={1}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm mb-1 block">Supporting</label>
+                      <Slider
+                        value={[currentStats.supporting]}
+                        onValueChange={([value]) =>
+                          onStatsChange({
+                            ...currentStats,
+                            supporting: value,
+                          })
+                        }
+                        max={10}
+                        step={1}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm mb-1 block">Pushing</label>
+                      <Slider
+                        value={[currentStats.pushing]}
+                        onValueChange={([value]) =>
+                          onStatsChange({
+                            ...currentStats,
+                            pushing: value,
+                          })
+                        }
+                        max={10}
+                        step={1}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm mb-1 block">Versatility</label>
+                      <Slider
+                        value={[currentStats.versatility]}
+                        onValueChange={([value]) =>
+                          onStatsChange({
+                            ...currentStats,
+                            versatility: value,
+                          })
+                        }
+                        max={10}
+                        step={1}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <Separator />
 

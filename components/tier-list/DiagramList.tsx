@@ -1,6 +1,7 @@
 "use client";
 
 import { Diagram } from "./types";
+import { PolygonChart } from "./PolygonChart";
 
 interface DiagramListProps {
   diagrams: Diagram[];
@@ -34,6 +35,11 @@ export default function DiagramList({ diagrams, currentDiagramId, onDiagramSelec
                   <div className="text-xs text-slate-500">Diagram {diagram.id}</div>
                 </div>
               </div>
+              {diagram.id === currentDiagramId && diagram.stats && (
+                <div className="mt-2">
+                  <PolygonChart stats={diagram.stats} />
+                </div>
+              )}
             </div>
           ))}
         </div>

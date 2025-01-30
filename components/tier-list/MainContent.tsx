@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { DiagramStats } from "./types";
+import { PolygonChart } from "./PolygonChart";
 
 interface TierListItem {
   id: number;
@@ -35,9 +37,10 @@ const generateMockData = (propertyCount: number): TierListItem[] => {
 
 interface MainContentProps {
   propertyCount: number;
+  currentStats?: DiagramStats;
 }
 
-export default function MainContent({ propertyCount }: MainContentProps) {
+export default function MainContent({ propertyCount, currentStats }: MainContentProps) {
   const [view, setView] = useState<"diagram" | "table">("diagram");
 
   const mockData = useMemo(() => generateMockData(propertyCount), [propertyCount]);
@@ -61,7 +64,15 @@ export default function MainContent({ propertyCount }: MainContentProps) {
 
         {view === "diagram" ? (
           <div className="relative aspect-video bg-slate-100 rounded-lg flex items-center justify-center">
-            <span className="text-slate-400">Tier List Diagram Placeholder</span>
+            {currentStats ? (
+              <div className="w-full h-full flex items-center justify-center">
+                <div className="w-[80%] h-[80%]">
+                  <PolygonChart stats={currentStats} />
+                </div>
+              </div>
+            ) : (
+              <span className="text-slate-400">No diagram selected</span>
+            )}
             <Button variant="outline" className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full p-2">
               <ChevronLeft className="w-6 h-6" />
             </Button>
