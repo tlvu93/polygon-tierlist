@@ -1,8 +1,6 @@
-import Header from "../components/Header";
-import MainContent from "../components/MainContent";
-import Sidebar from "../components/Sidebar";
-import { createClient } from "@/utils/supabase/server";
+import { createClient } from "@/app/utils/supabase/server";
 import { redirect } from "next/navigation";
+import DashboardContent from "@/components/DashboardContent";
 
 export default async function Dashboard() {
   const supabase = await createClient();
@@ -11,16 +9,8 @@ export default async function Dashboard() {
   } = await supabase.auth.getSession();
 
   if (!session) {
-    redirect("/auth/login?message=Please sign in to access the dashboard");
+    redirect("/auth/login");
   }
 
-  return (
-    <div className="flex flex-col h-screen">
-      <Header />
-      <div className="flex flex-1 overflow-hidden">
-        <MainContent />
-        <Sidebar />
-      </div>
-    </div>
-  );
+  return <DashboardContent />;
 }

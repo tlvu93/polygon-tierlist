@@ -1,8 +1,8 @@
 import LoginForm from "@/components/auth/LoginForm";
-import { createClient } from "@/utils/supabase/server";
+import { createClient } from "@/app/utils/supabase/server";
 import { redirect } from "next/navigation";
 
-export default async function LoginPage({ searchParams }: { searchParams: { message: string } }) {
+export default async function LoginPage({ searchParams }: { searchParams: { message?: string } }) {
   const supabase = await createClient();
   const {
     data: { session },
