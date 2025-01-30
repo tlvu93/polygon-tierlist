@@ -59,11 +59,11 @@ export async function middleware(request: NextRequest) {
     data: { session },
   } = await supabase.auth.getSession();
 
-  // Protected routes
-  const protectedRoutes = ["/dashboard", "/tier-list"];
-  const isProtectedRoute = protectedRoutes.some((route) => request.nextUrl.pathname.startsWith(route));
+  // Protected routes - all routes except landing page, auth routes, and new tier list
+  const publicRoutes = ["/", "/auth", "/tier-list/new"];
+  const isPublicRoute = publicRoutes.some((route) => request.nextUrl.pathname.startsWith(route));
 
-  if (isProtectedRoute && !session) {
+  if (!isPublicRoute && !session) {
     const redirectUrl = new URL("/auth/login", request.url);
     redirectUrl.searchParams.set("message", "Please sign in to access this page");
     return NextResponse.redirect(redirectUrl);
