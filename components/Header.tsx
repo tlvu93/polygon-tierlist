@@ -1,15 +1,20 @@
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Bell, Search } from "lucide-react"
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Bell, Search } from "lucide-react";
 
 export default function Header() {
   return (
     <header className="flex items-center justify-between px-6 py-4 bg-white border-b">
       <div className="flex items-center space-x-4">
         <Link href="/" className="text-xl font-bold text-blue-600">
-          PolyChart
+          PolyTierlist
         </Link>
         <div className="relative">
           <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -34,6 +39,5 @@ export default function Header() {
         </DropdownMenu>
       </div>
     </header>
-  )
+  );
 }
-
