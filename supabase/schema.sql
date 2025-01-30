@@ -14,6 +14,7 @@ create table tier_lists (
   user_id uuid references auth.users on delete cascade,
   title text not null,
   description text,
+  position integer default 0,
   created_at timestamp with time zone default timezone('utc'::text, now()),
   updated_at timestamp with time zone default timezone('utc'::text, now())
 );
@@ -56,4 +57,25 @@ create table group_tier_lists (
   position integer not null,
   created_at timestamp with time zone default timezone('utc'::text, now()),
   primary key (group_id, tier_list_id)
+);
+
+-- diagrams
+create table diagrams (
+  id uuid default uuid_generate_v4() primary key,
+  tier_list_id uuid references tier_lists on delete cascade,
+  name text not null,
+  thumbnail text,
+  position integer not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()),
+  updated_at timestamp with time zone default timezone('utc'::text, now())
+);
+
+-- diagram_properties
+create table diagram_properties (
+  id uuid default uuid_generate_v4() primary key,
+  diagram_id uuid references diagrams on delete cascade,
+  name text not null,
+  value integer not null,
+  position integer not null,
+  created_at timestamp with time zone default timezone('utc'::text, now())
 );

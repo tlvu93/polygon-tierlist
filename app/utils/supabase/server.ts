@@ -1,34 +1,69 @@
 "use server";
 
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import { PostgrestError } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 
 export async function createClient() {
-  const cookieStore = await cookies();
+  try {
+    console.log("Starting Supabase client creation...");
 
-  return createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
-    cookies: {
-      get(name: string) {
-        return cookieStore.get(name)?.value;
+    // Check environment variables
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
+      throw new Error("NEXT_PUBLIC_SUPABASE_URL is not defined");
+    }
+    if (!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+      throw new Error("NEXT_PUBLIC_SUPABASE_ANON_KEY is not defined");
+    }
+
+    const cookieStore = await cookies();
+    console.log("Cookie store initialized");
+
+    const client = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY, {
+      cookies: {
+        get(name: string) {
+          const cookie = cookieStore.get(name);
+          console.log(`Getting cookie: ${name}`, cookie ? "found" : "not found");
+          return cookie?.value;
+        },
+        set(name: string, value: string, options: CookieOptions) {
+          try {
+            console.log(`Setting cookie: ${name}`);
+            cookieStore.set({ name, value, ...options });
+          } catch (error) {
+            console.error(`Error setting cookie ${name}:`, error);
+            throw error;
+          }
+        },
+        remove(name: string, options: CookieOptions) {
+          try {
+            console.log(`Removing cookie: ${name}`);
+            cookieStore.delete({ name, ...options });
+          } catch (error) {
+            console.error(`Error removing cookie ${name}:`, error);
+            throw error;
+          }
+        },
       },
-      set(name: string, value: string, options: CookieOptions) {
-        try {
-          cookieStore.set({ name, value, ...options });
-        } catch (error) {
-          // Handle cookie error
-          console.error("Error setting cookie:", error);
-        }
-      },
-      remove(name: string, options: CookieOptions) {
-        try {
-          cookieStore.delete({ name, ...options });
-        } catch (error) {
-          // Handle cookie error
-          console.error("Error removing cookie:", error);
-        }
-      },
-    },
-  });
+    });
+
+    // Test the client connection
+    const { data, error } = await client.auth.getSession();
+    console.log("Auth session test:", {
+      hasSession: !!data.session,
+      error: error?.message,
+    });
+
+    return client;
+  } catch (error) {
+    console.error("Error creating Supabase client:", {
+      error,
+      type: error?.constructor?.name,
+      message: error instanceof Error ? error.message : "Unknown error",
+      stack: error instanceof Error ? error.stack : undefined,
+    });
+    throw error;
+  }
 }
 
 export async function createGroup(userId: string, name: string, parentGroupId: string | null = null) {
@@ -67,24 +102,69 @@ export async function createGroup(userId: string, name: string, parentGroupId: s
   }
 }
 
-export async function createTierList(userId: string, title: string, description: string | null = null) {
+export async function createTierList(
+  userId: string,
+  title: string,
+  description: string | null = null,
+  groupId: string | null = null
+) {
   "use server";
 
   try {
     const supabase = await createClient();
 
-    const { data, error } = await supabase
+    // Start a transaction
+    const { data: tierList, error: tierListError } = await supabase
       .from("tier_lists")
       .insert({
         user_id: userId,
         title,
         description,
+        position: 0, // Will be updated if needed
       })
       .select()
       .single();
 
-    if (error) throw error;
-    return data;
+    if (tierListError) throw tierListError;
+
+    if (groupId) {
+      // Add to group with the correct position
+      const { data: positionData } = await supabase
+        .from("group_tier_lists")
+        .select("position")
+        .eq("group_id", groupId)
+        .order("position", { ascending: false })
+        .limit(1);
+
+      const position = positionData?.[0]?.position ?? -1;
+
+      const { error: relationError } = await supabase.from("group_tier_lists").insert({
+        group_id: groupId,
+        tier_list_id: tierList.id,
+        position: position + 1,
+      });
+
+      if (relationError) throw relationError;
+    } else {
+      // Update position at root level
+      const { data: positionData } = await supabase
+        .from("tier_lists")
+        .select("position")
+        .eq("user_id", userId)
+        .order("position", { ascending: false })
+        .limit(1);
+
+      const position = positionData?.[0]?.position ?? -1;
+
+      const { error: updateError } = await supabase
+        .from("tier_lists")
+        .update({ position: position + 1 })
+        .eq("id", tierList.id);
+
+      if (updateError) throw updateError;
+    }
+
+    return tierList;
   } catch (error) {
     console.error("Error creating tier list:", error);
     throw new Error("Failed to create tier list");
@@ -129,42 +209,89 @@ export async function getUserContent(userId: string) {
   "use server";
 
   try {
+    console.log("Creating Supabase client...");
     const supabase = await createClient();
+    console.log("Supabase client created successfully");
 
-    // Get all groups
-    const { data: groups, error: groupsError } = await supabase
-      .from("groups")
-      .select("*")
-      .eq("user_id", userId)
-      .order("position");
+    console.log("Fetching groups...");
+    const groupsResult = await supabase.from("groups").select("*").eq("user_id", userId).order("position");
 
-    if (groupsError) throw groupsError;
+    console.log("Groups query result:", {
+      data: groupsResult.data,
+      error: groupsResult.error,
+      status: groupsResult.status,
+      statusText: groupsResult.statusText,
+      count: groupsResult.count,
+    });
 
-    // Get all tier lists
-    const { data: tierLists, error: tierListsError } = await supabase
+    if (groupsResult.error) {
+      console.error("Error in groups query:", groupsResult.error);
+      throw groupsResult.error;
+    }
+
+    console.log("Fetching tier lists...");
+    const tierListsResult = await supabase
       .from("tier_lists")
       .select("*")
       .eq("user_id", userId)
-      .order("created_at", { ascending: false });
+      .order("position", { nullsFirst: true });
 
-    if (tierListsError) throw tierListsError;
+    console.log("Tier lists query result:", {
+      data: tierListsResult.data,
+      error: tierListsResult.error,
+      status: tierListsResult.status,
+      statusText: tierListsResult.statusText,
+      count: tierListsResult.count,
+    });
 
-    // Get all group-tierlist relationships
-    const { data: groupTierLists, error: relationError } = await supabase
-      .from("group_tier_lists")
-      .select("*")
-      .order("position");
+    if (tierListsResult.error) {
+      console.error("Error in tier lists query:", tierListsResult.error);
+      throw tierListsResult.error;
+    }
 
-    if (relationError) throw relationError;
+    console.log("Fetching group-tierlist relationships...");
+    const relationResult = await supabase.from("group_tier_lists").select("*").order("position");
 
-    return {
-      groups: groups || [],
-      tierLists: tierLists || [],
-      groupTierLists: groupTierLists || [],
+    console.log("Group-tierlist relationships query result:", {
+      data: relationResult.data,
+      error: relationResult.error,
+      status: relationResult.status,
+      statusText: relationResult.statusText,
+      count: relationResult.count,
+    });
+
+    if (relationResult.error) {
+      console.error("Error in relationships query:", relationResult.error);
+      throw relationResult.error;
+    }
+
+    const result = {
+      groups: groupsResult.data || [],
+      tierLists: tierListsResult.data || [],
+      groupTierLists: relationResult.data || [],
     };
-  } catch (error) {
-    console.error("Error fetching user content:", error);
-    throw new Error("Failed to fetch user content");
+
+    console.log("Successfully fetched all content:", result);
+    return result;
+  } catch (error: unknown) {
+    console.error("Detailed error in getUserContent:", {
+      error,
+      type: error?.constructor?.name,
+      keys: error ? Object.keys(error) : [],
+      toString: error?.toString?.(),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
+
+    const message = error instanceof Error ? error.message : "Unknown error";
+    if (error instanceof PostgrestError) {
+      console.error("PostgrestError details:", {
+        details: error.details,
+        hint: error.hint,
+        code: error.code,
+        message: error.message,
+      });
+    }
+    throw new Error(`Failed to fetch user content: ${message}`);
   }
 }
 
@@ -189,22 +316,62 @@ export async function updateGroupPosition(groupId: string, newPosition: number) 
   }
 }
 
-export async function updateTierListPosition(groupId: string, tierListId: string, newPosition: number) {
+export async function updateTierListPosition(groupId: string | null, tierListId: string, newPosition: number) {
   "use server";
 
   try {
     const supabase = await createClient();
 
-    const { data, error } = await supabase
+    // First, check if the tier list is currently in a group
+    const { data: currentRelation } = await supabase
       .from("group_tier_lists")
-      .update({ position: newPosition })
-      .eq("group_id", groupId)
+      .select("group_id")
       .eq("tier_list_id", tierListId)
-      .select()
       .single();
 
-    if (error) throw error;
-    return data;
+    // Start a transaction
+    if (groupId) {
+      // Moving to a group (either from root or another group)
+      if (currentRelation) {
+        // Remove from current group
+        const { error: deleteError } = await supabase.from("group_tier_lists").delete().eq("tier_list_id", tierListId);
+
+        if (deleteError) throw deleteError;
+      }
+
+      // Add to new group
+      const { data, error } = await supabase
+        .from("group_tier_lists")
+        .insert({
+          group_id: groupId,
+          tier_list_id: tierListId,
+          position: newPosition,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } else {
+      // Moving to root level
+      if (currentRelation) {
+        // Remove from current group
+        const { error: deleteError } = await supabase.from("group_tier_lists").delete().eq("tier_list_id", tierListId);
+
+        if (deleteError) throw deleteError;
+      }
+
+      // Update position at root level
+      const { data, error } = await supabase
+        .from("tier_lists")
+        .update({ position: newPosition })
+        .eq("id", tierListId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    }
   } catch (error) {
     console.error("Error updating tier list position:", error);
     throw new Error("Failed to update tier list position");

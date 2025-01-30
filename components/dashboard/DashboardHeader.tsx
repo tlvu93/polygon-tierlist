@@ -22,12 +22,14 @@ export function DashboardHeader({
 }: DashboardHeaderProps) {
   return (
     <div className="flex justify-between items-center mb-6">
-      <div className="flex items-center space-x-2">
-        <h1 className="text-2xl font-bold">Dashboard</h1>
-        {currentPath.length > 0 && (
-          <Button variant="ghost" onClick={onNavigateUp}>
-            Up
+      <div className="flex items-center space-x-4">
+        {currentPath.length > 0 ? (
+          <Button variant="ghost" onClick={onNavigateUp} className="flex items-center space-x-2">
+            <ChevronDown className="w-4 h-4 rotate-90" />
+            <span>Back to Dashboard</span>
           </Button>
+        ) : (
+          <h1 className="text-2xl font-bold">Dashboard</h1>
         )}
       </div>
       <DropdownMenu>

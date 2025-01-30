@@ -20,9 +20,9 @@ export function SortableItem({ id, children, onClick, onDoubleClick }: SortableI
   };
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes}>
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="relative touch-none">
       <div
-        className="h-full"
+        className="h-full cursor-move"
         onClick={(e) => {
           e.stopPropagation();
           onClick();
@@ -32,10 +32,7 @@ export function SortableItem({ id, children, onClick, onDoubleClick }: SortableI
           onDoubleClick();
         }}
       >
-        <div
-          {...listeners}
-          className="absolute top-2 right-2 w-6 h-6 rounded-full bg-gray-100 opacity-0 hover:opacity-100 cursor-move flex items-center justify-center"
-        >
+        <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-gray-100 opacity-0 group-hover:opacity-100 flex items-center justify-center pointer-events-none">
           ⋮
         </div>
         {children}

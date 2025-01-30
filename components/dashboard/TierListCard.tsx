@@ -11,8 +11,8 @@ export function TierListCard({ tierList, isSelected }: TierListCardProps) {
   return (
     <Card
       role="button"
-      className={`overflow-hidden border-2 shadow-md cursor-pointer transition-all duration-200 ${
-        isSelected ? "border-blue-500 shadow-blue-200" : "border-transparent"
+      className={`group overflow-hidden border-2 shadow-md cursor-pointer transition-all duration-200 hover:shadow-lg ${
+        isSelected ? "border-blue-500 shadow-blue-200" : "border-transparent hover:border-gray-200"
       }`}
     >
       <img src={tierList.image || "/placeholder.svg"} alt={tierList.title} className="w-full h-32 object-cover" />

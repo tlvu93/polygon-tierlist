@@ -1,6 +1,6 @@
 "use client";
 
-import { SortableContext, horizontalListSortingStrategy } from "@dnd-kit/sortable";
+import { SortableContext, rectSortingStrategy } from "@dnd-kit/sortable";
 import { Item } from "@/components/dashboard/types";
 import { SortableItem } from "@/components/dashboard/SortableItem";
 import { GroupCard } from "@/components/dashboard/GroupCard";
@@ -32,7 +32,7 @@ export function DashboardGrid({
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-      <SortableContext items={items.map((item) => item.id)} strategy={horizontalListSortingStrategy}>
+      <SortableContext items={items.map((item) => item.id)} strategy={rectSortingStrategy}>
         {items.map((item) => (
           <SortableItem
             key={item.id}
