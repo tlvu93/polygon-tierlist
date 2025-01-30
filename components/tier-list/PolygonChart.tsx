@@ -1,22 +1,20 @@
 "use client";
 
-import { DiagramStats } from "./types";
-import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer } from "recharts";
 import { cn } from "@/lib/utils";
+import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer } from "recharts";
 
 interface PolygonChartProps extends React.HTMLAttributes<HTMLDivElement> {
-  stats: DiagramStats;
+  stats: { [key: string]: number };
+  hideLabels?: boolean;
+  isPreview?: boolean;
 }
 
-export function PolygonChart({ stats, className, ...props }: PolygonChartProps) {
+export function PolygonChart({ stats, hideLabels = false, isPreview = false, className, ...props }: PolygonChartProps) {
   // Transform stats object into array format for Recharts
-  const data = [
-    { subject: "FIGHTING", value: stats.fighting },
-    { subject: "FARMING", value: stats.farming },
-    { subject: "SUPPORTING", value: stats.supporting },
-    { subject: "PUSHING", value: stats.pushing },
-    { subject: "VERSATILITY", value: stats.versatility },
-  ];
+  const data = Object.entries(stats).map(([key, value]) => ({
+    subject: key.toUpperCase(),
+    value: value,
+  }));
 
   return (
     <div className={cn("w-full aspect-square", className)} {...props}>
@@ -25,11 +23,14 @@ export function PolygonChart({ stats, className, ...props }: PolygonChartProps) 
           <PolarGrid
             gridType="polygon"
             stroke="rgb(75, 85, 99)" // Tailwind gray-600
+            strokeWidth={isPreview ? 0.5 : 1}
           />
-          <PolarAngleAxis
-            dataKey="subject"
-            tick={{ fill: "rgb(156, 163, 175)", fontSize: 12 }} // Tailwind gray-400
-          />
+          {!hideLabels && (
+            <PolarAngleAxis
+              dataKey="subject"
+              tick={{ fill: "rgb(156, 163, 175)", fontSize: 12 }} // Tailwind gray-400
+            />
+          )}
           <Radar
             name="Stats"
             dataKey="value"
@@ -38,7 +39,7 @@ export function PolygonChart({ stats, className, ...props }: PolygonChartProps) 
             fillOpacity={0.1}
             dot={{
               fill: "rgb(249, 115, 22)", // Tailwind orange-500
-              r: 4,
+              r: isPreview ? 2 : 4,
             }}
           />
         </RadarChart>

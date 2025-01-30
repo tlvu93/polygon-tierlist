@@ -1,82 +1,128 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
-import { DiagramStats } from "./types";
+import { ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
+import { Diagram } from "./types";
 import { PolygonChart } from "./PolygonChart";
 
-interface TierListItem {
-  id: number;
-  name: string;
-  [key: `property${number}`]: number;
-}
-
-const generateMockData = (propertyCount: number): TierListItem[] => {
-  const properties = Array.from({ length: propertyCount }, (_, i) => `property${i + 1}`);
-  return [
-    {
-      id: 1,
-      name: "Sony XM5",
-      ...Object.fromEntries(properties.map((prop) => [prop, Math.floor(Math.random() * 10) + 1])),
-    },
-    {
-      id: 2,
-      name: "Bose QC45",
-      ...Object.fromEntries(properties.map((prop) => [prop, Math.floor(Math.random() * 10) + 1])),
-    },
-    {
-      id: 3,
-      name: "AirPods Max",
-      ...Object.fromEntries(properties.map((prop) => [prop, Math.floor(Math.random() * 10) + 1])),
-    },
-  ];
-};
-
 interface MainContentProps {
-  propertyCount: number;
-  currentStats?: DiagramStats;
+  diagrams: Diagram[];
+  currentDiagramId: string;
+  onDiagramSelect: (id: string) => void;
+  onDiagramDelete?: (id: string) => void;
+  onDiagramNameChange?: (id: string, name: string) => void;
 }
 
-export default function MainContent({ propertyCount, currentStats }: MainContentProps) {
+export default function MainContent({
+  diagrams,
+  currentDiagramId,
+  onDiagramSelect,
+  onDiagramDelete,
+  onDiagramNameChange,
+}: MainContentProps) {
   const [view, setView] = useState<"diagram" | "table">("diagram");
+  const [isEditingName, setIsEditingName] = useState(false);
 
-  const mockData = useMemo(() => generateMockData(propertyCount), [propertyCount]);
-  const properties = useMemo(
-    () => Array.from({ length: propertyCount }, (_, i) => `Property ${i + 1}`),
-    [propertyCount]
-  );
+  const currentDiagramIndex = diagrams.findIndex((d) => d.id === currentDiagramId);
+  const currentDiagram = diagrams[currentDiagramIndex];
+
+  const handlePrevDiagram = () => {
+    if (currentDiagramIndex > 0) {
+      onDiagramSelect(diagrams[currentDiagramIndex - 1].id);
+    }
+  };
+
+  const handleNextDiagram = () => {
+    if (currentDiagramIndex < diagrams.length - 1) {
+      onDiagramSelect(diagrams[currentDiagramIndex + 1].id);
+    }
+  };
+
+  // Convert properties to stats format for PolygonChart
+  const propertiesToStats = (diagram: Diagram) => {
+    const statsObject: { [key: string]: number } = {};
+    diagram.properties.forEach((prop) => {
+      statsObject[prop.name.toLowerCase().replace(/\s+/g, "_")] = prop.value;
+    });
+    return statsObject;
+  };
 
   return (
     <main className="flex-1 p-6 overflow-auto">
       <Card className="p-6">
-        <div className="flex justify-between items-center mb-4">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <div
+              className="group relative"
+              onClick={(e) => {
+                if (!isEditingName) {
+                  e.preventDefault();
+                  setIsEditingName(true);
+                }
+              }}
+            >
+              {isEditingName ? (
+                <input
+                  type="text"
+                  value={currentDiagram?.name || ""}
+                  onChange={(e) => onDiagramNameChange?.(currentDiagramId, e.target.value)}
+                  onBlur={() => setIsEditingName(false)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      setIsEditingName(false);
+                    }
+                  }}
+                  className="text-2xl font-semibold bg-transparent border-b border-slate-300 outline-none w-full"
+                  autoFocus
+                />
+              ) : (
+                <h2 className="text-2xl font-semibold cursor-pointer group-hover:text-blue-600">
+                  {currentDiagram?.name || "Untitled Diagram"}
+                </h2>
+              )}
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => onDiagramDelete?.(currentDiagramId)}
+              className="h-10 w-10"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
           <Button variant="outline" onClick={() => setView(view === "diagram" ? "table" : "diagram")}>
             {view === "diagram" ? "Switch to Table" : "Switch to Diagram"}
-          </Button>
-          <Button variant="default">
-            <Plus className="w-4 h-4 mr-2" />
-            Add Item
           </Button>
         </div>
 
         {view === "diagram" ? (
-          <div className="relative aspect-video bg-slate-100 rounded-lg flex items-center justify-center">
-            {currentStats ? (
-              <div className="w-full h-full flex items-center justify-center">
-                <div className="w-[80%] h-[80%]">
-                  <PolygonChart stats={currentStats} />
-                </div>
-              </div>
-            ) : (
-              <span className="text-slate-400">No diagram selected</span>
-            )}
-            <Button variant="outline" className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full p-2">
+          <div className="relative bg-slate-100 rounded-lg flex items-center justify-center p-4">
+            <div className="relative aspect-square w-full max-w-4xl mx-auto">
+              {currentDiagram ? (
+                <PolygonChart stats={propertiesToStats(currentDiagram)} />
+              ) : (
+                <span className="absolute inset-0 flex items-center justify-center text-slate-400">
+                  No diagram selected
+                </span>
+              )}
+            </div>
+            <Button
+              variant="outline"
+              className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full p-2"
+              onClick={handlePrevDiagram}
+              disabled={currentDiagramIndex <= 0}
+            >
               <ChevronLeft className="w-6 h-6" />
             </Button>
-            <Button variant="outline" className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full p-2">
+            <Button
+              variant="outline"
+              className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full p-2"
+              onClick={handleNextDiagram}
+              disabled={currentDiagramIndex >= diagrams.length - 1}
+            >
               <ChevronRight className="w-6 h-6" />
             </Button>
           </div>
@@ -85,17 +131,17 @@ export default function MainContent({ propertyCount, currentStats }: MainContent
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
-                {properties.map((prop, index) => (
-                  <TableHead key={index}>{prop}</TableHead>
+                {currentDiagram?.properties.map((prop, index) => (
+                  <TableHead key={index}>{prop.name}</TableHead>
                 ))}
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mockData.map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell>{item.name}</TableCell>
-                  {properties.map((prop, index) => (
-                    <TableCell key={index}>{item[`property${index + 1}`]}</TableCell>
+              {diagrams.map((diagram) => (
+                <TableRow key={diagram.id}>
+                  <TableCell>{diagram.name}</TableCell>
+                  {diagram.properties.map((prop, index) => (
+                    <TableCell key={index}>{prop.value}</TableCell>
                   ))}
                 </TableRow>
               ))}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
@@ -8,43 +8,26 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { MinusCircle, PlusCircle } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
-import { DiagramStats } from "./types";
+import { Diagram, DiagramProperty } from "./types";
 
 interface SidebarProps {
   propertyCount: number;
   onPropertyCountChange: (count: number) => void;
-  currentStats?: DiagramStats;
-  onStatsChange?: (stats: DiagramStats) => void;
+  currentDiagram?: Diagram;
+  propertyNames: string[];
+  onPropertyChange: (index: number, change: Partial<DiagramProperty>) => void;
 }
 
-export default function Sidebar({ propertyCount, onPropertyCountChange, currentStats, onStatsChange }: SidebarProps) {
+export default function Sidebar({
+  propertyCount,
+  onPropertyCountChange,
+  currentDiagram,
+  propertyNames,
+  onPropertyChange,
+}: SidebarProps) {
   const [currentTab, setCurrentTab] = useState("editor");
-  const [propertyNames, setPropertyNames] = useState<string[]>(
-    Array(propertyCount)
-      .fill("")
-      .map((_, i) => `Property ${i + 1}`)
-  );
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [tierListName, setTierListName] = useState("Headphone Comparison");
-
-  useEffect(() => {
-    // Update property names when count changes
-    setPropertyNames((prev) => {
-      if (prev.length < propertyCount) {
-        // Add new properties
-        return [
-          ...prev,
-          ...Array(propertyCount - prev.length)
-            .fill("")
-            .map((_, i) => `Property ${prev.length + i + 1}`),
-        ];
-      } else if (prev.length > propertyCount) {
-        // Remove excess properties
-        return prev.slice(0, propertyCount);
-      }
-      return prev;
-    });
-  }, [propertyCount]);
 
   const handlePropertyCountChange = (increment: boolean) => {
     const newCount = increment ? propertyCount + 1 : propertyCount - 1;
@@ -52,7 +35,7 @@ export default function Sidebar({ propertyCount, onPropertyCountChange, currentS
   };
 
   return (
-    <aside className="w-[20%] min-w-[200px] bg-slate-50 border-l overflow-auto">
+    <aside className="w-[20%] min-w-[200px] bg-slate-100 border-l overflow-auto">
       <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="editor">Editor</TabsTrigger>
@@ -101,87 +84,6 @@ export default function Sidebar({ propertyCount, onPropertyCountChange, currentS
 
               <Separator />
 
-              {/* Stats Section */}
-              {currentStats && onStatsChange && (
-                <div>
-                  <h3 className="text-sm font-medium text-slate-500 mb-3">Stats</h3>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="text-sm mb-1 block">Fighting</label>
-                      <Slider
-                        value={[currentStats.fighting]}
-                        onValueChange={([value]) =>
-                          onStatsChange({
-                            ...currentStats,
-                            fighting: value,
-                          })
-                        }
-                        max={10}
-                        step={1}
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm mb-1 block">Farming</label>
-                      <Slider
-                        value={[currentStats.farming]}
-                        onValueChange={([value]) =>
-                          onStatsChange({
-                            ...currentStats,
-                            farming: value,
-                          })
-                        }
-                        max={10}
-                        step={1}
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm mb-1 block">Supporting</label>
-                      <Slider
-                        value={[currentStats.supporting]}
-                        onValueChange={([value]) =>
-                          onStatsChange({
-                            ...currentStats,
-                            supporting: value,
-                          })
-                        }
-                        max={10}
-                        step={1}
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm mb-1 block">Pushing</label>
-                      <Slider
-                        value={[currentStats.pushing]}
-                        onValueChange={([value]) =>
-                          onStatsChange({
-                            ...currentStats,
-                            pushing: value,
-                          })
-                        }
-                        max={10}
-                        step={1}
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm mb-1 block">Versatility</label>
-                      <Slider
-                        value={[currentStats.versatility]}
-                        onValueChange={([value]) =>
-                          onStatsChange({
-                            ...currentStats,
-                            versatility: value,
-                          })
-                        }
-                        max={10}
-                        step={1}
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <Separator />
-
               {/* Properties Section */}
               <div>
                 <h3 className="text-sm font-medium text-slate-500 mb-3">Properties</h3>
@@ -197,9 +99,7 @@ export default function Sidebar({ propertyCount, onPropertyCountChange, currentS
                             type="text"
                             value={propertyNames[i]}
                             onChange={(e) => {
-                              const newNames = [...propertyNames];
-                              newNames[i] = e.target.value;
-                              setPropertyNames(newNames);
+                              onPropertyChange(i, { name: e.target.value });
                             }}
                             onBlur={() => setEditingIndex(null)}
                             onKeyDown={(e) => {
@@ -214,7 +114,14 @@ export default function Sidebar({ propertyCount, onPropertyCountChange, currentS
                           <span>{propertyNames[i]}</span>
                         )}
                       </div>
-                      <Slider defaultValue={[5]} max={10} step={1} />
+                      <Slider
+                        value={[currentDiagram?.properties[i]?.value ?? 5]}
+                        onValueChange={([value]) => {
+                          onPropertyChange(i, { value });
+                        }}
+                        max={10}
+                        step={1}
+                      />
                     </div>
                   ))}
                 </div>

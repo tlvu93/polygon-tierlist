@@ -1,14 +1,11 @@
-export interface DiagramStats {
-  fighting: number;
-  farming: number;
-  supporting: number;
-  pushing: number;
-  versatility: number;
+export interface DiagramProperty {
+  name: string;
+  value: number;
 }
 
 export interface Diagram {
   id: string;
   name: string;
   thumbnail?: string;
-  stats?: DiagramStats;
+  properties: DiagramProperty[];
 }
