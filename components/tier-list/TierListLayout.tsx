@@ -5,14 +5,20 @@ import Header from "@/app/components/Header";
 import MainContent from "./MainContent";
 import Sidebar from "./Sidebar";
 import DiagramList from "./DiagramList";
+import { createClient } from "@/utils/supabase/client";
 
 import { Diagram, DiagramProperty } from "./types";
 
 interface TierListLayoutProps {
   tierListName?: string;
+  id?: string;
 }
 
-export default function TierListLayout({ tierListName = "Headphone Comparison" }: TierListLayoutProps) {
+export default function TierListLayout({
+  tierListName: initialTierListName = "Headphone Comparison",
+  id,
+}: TierListLayoutProps) {
+  const [tierListName, setTierListName] = useState(initialTierListName);
   const [propertyCount, setPropertyCount] = useState(5);
   const [currentDiagramId, setCurrentDiagramId] = useState("1");
   const [diagrams, setDiagrams] = useState<Diagram[]>([
@@ -124,9 +130,26 @@ export default function TierListLayout({ tierListName = "Headphone Comparison" }
     setCurrentDiagramId(newId);
   };
 
+  const handleTierListNameChange = async (newName: string) => {
+    if (!id) return;
+
+    try {
+      const supabase = createClient();
+      const { error } = await supabase
+        .from("tier_lists")
+        .update({ title: newName, updated_at: new Date().toISOString() })
+        .eq("id", id);
+
+      if (error) throw error;
+      setTierListName(newName);
+    } catch (error) {
+      console.error("Error updating tier list name:", error);
+    }
+  };
+
   return (
     <div className="flex flex-col h-screen bg-white">
-      <Header tierListName={tierListName} isLoggedIn={true} />
+      <Header tierListName={tierListName} isLoggedIn={true} onTierListNameChange={handleTierListNameChange} />
       <div className="flex flex-1 overflow-hidden">
         <DiagramList
           diagrams={diagrams}

@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Input } from "@/components/ui/input";
 import { MinusCircle, PlusCircle } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Diagram, DiagramProperty } from "./types";
@@ -27,7 +26,6 @@ export default function Sidebar({
 }: SidebarProps) {
   const [currentTab, setCurrentTab] = useState("editor");
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
-  const [tierListName, setTierListName] = useState("Headphone Comparison");
 
   const handlePropertyCountChange = (increment: boolean) => {
     const newCount = increment ? propertyCount + 1 : propertyCount - 1;
@@ -49,14 +47,6 @@ export default function Sidebar({
               <div>
                 <h3 className="text-sm font-medium text-slate-500 mb-3">General Settings</h3>
                 <div className="space-y-3">
-                  <div>
-                    <label className="text-sm mb-1 block">Tier List Name</label>
-                    <Input
-                      value={tierListName}
-                      onChange={(e) => setTierListName(e.target.value)}
-                      placeholder="Enter tier list name"
-                    />
-                  </div>
                   <div>
                     <label className="text-sm mb-1 block">Properties</label>
                     <div className="flex items-center gap-2">

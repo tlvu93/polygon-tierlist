@@ -1,9 +1,20 @@
 import TierListLayout from "@/components/tier-list/TierListLayout";
+import { createClient } from "@/app/utils/supabase/server";
 
 export default async function TierListPage(props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
-  // You can use the id to fetch the specific tier list data
-  console.log("Tier List ID:", params.id);
+  const supabase = await createClient();
 
-  return <TierListLayout />;
+  const { data: tierList, error } = await supabase.from("tier_lists").select("title").eq("id", params.id).single();
+
+  if (error) {
+    console.error("Error fetching tier list:", error);
+    return <div>Error loading tier list</div>;
+  }
+
+  if (!tierList) {
+    return <div>Tier list not found</div>;
+  }
+
+  return <TierListLayout id={params.id} tierListName={tierList.title} />;
 }
