@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
+import { useEffect, useState } from "react";
+import { User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -18,6 +20,21 @@ interface HeaderProps {
 }
 
 export default function Header({ tierListName, isLoggedIn }: HeaderProps = {}) {
+  const [user, setUser] = useState<User | null>(null);
+  const supabase = createClient();
+
+  useEffect(() => {
+    async function getUser() {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      setUser(user);
+    }
+
+    if (isLoggedIn) {
+      getUser();
+    }
+  }, [isLoggedIn]);
   return (
     <header className="flex items-center justify-between px-6 py-4 bg-white border-b">
       <div className="flex items-center space-x-4">
@@ -35,8 +52,13 @@ export default function Header({ tierListName, isLoggedIn }: HeaderProps = {}) {
         </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="w-8 h-8 rounded-full p-0">
-              <img src="/placeholder.svg?height=32&width=32" alt="User" className="rounded-full" />
+            <Button variant="ghost" className="flex items-center space-x-2">
+              <img
+                src={user?.user_metadata?.avatar_url || "/placeholder.svg?height=32&width=32"}
+                alt="User"
+                className="w-8 h-8 rounded-full"
+              />
+              <span className="text-sm font-medium">{user?.user_metadata?.full_name || "User"}</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
