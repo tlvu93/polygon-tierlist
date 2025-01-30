@@ -37,3 +37,23 @@ create table items (
   position integer not null,
   created_at timestamp with time zone default timezone('utc'::text, now())
 );
+
+-- groups
+create table groups (
+  id uuid default uuid_generate_v4() primary key,
+  user_id uuid references auth.users on delete cascade,
+  name text not null,
+  parent_group_id uuid references groups on delete cascade,
+  position integer not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()),
+  updated_at timestamp with time zone default timezone('utc'::text, now())
+);
+
+-- group_tier_lists
+create table group_tier_lists (
+  group_id uuid references groups on delete cascade,
+  tier_list_id uuid references tier_lists on delete cascade,
+  position integer not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()),
+  primary key (group_id, tier_list_id)
+);

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createBrowserClient } from "@supabase/ssr";
 import { useRouter } from "next/navigation";
 import {
   DndContext,
@@ -31,98 +32,156 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  createGroup,
+  createTierList,
+  deleteGroup,
+  getUserContent,
+  updateGroupPosition,
+  updateTierListPosition,
+} from "@/app/utils/supabase/server";
+import { Tables } from "@/types/supabase";
 
-interface TierList {
-  id: string;
-  name: string;
-  creator: string;
-  likes: number;
-  views: number;
-  image: string;
-}
+type TierListWithStats = Tables<"tier_lists"> & {
+  creator?: string;
+  likes?: number;
+  views?: number;
+  image?: string;
+};
 
-interface Group {
-  id: string;
-  name: string;
+type GroupWithItems = Tables<"groups"> & {
   items: Item[];
   isGroup: true;
-}
+};
 
-type Item = TierList | Group;
+type Item = TierListWithStats | GroupWithItems;
 
-const initialTierLists: Item[] = [
-  {
-    id: "1",
-    name: "Headphone Comparison",
-    creator: "AudioPhile",
-    likes: 245,
-    views: 1200,
-    image: "/placeholder.svg?height=100&width=200",
-  },
-  {
-    id: "2",
-    name: "Smartphone Rankings",
-    creator: "TechGuru",
-    likes: 189,
-    views: 980,
-    image: "/placeholder.svg?height=100&width=200",
-  },
-  {
-    id: "3",
-    name: "Best Video Games 2023",
-    creator: "GameMaster",
-    likes: 302,
-    views: 1500,
-    image: "/placeholder.svg?height=100&width=200",
-  },
-  {
-    id: "4",
-    name: "Top Movies of All Time",
-    creator: "CinemaFan",
-    likes: 567,
-    views: 2300,
-    image: "/placeholder.svg?height=100&width=200",
-  },
-];
+const supabase = createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
 
 export default function DashboardContent() {
-  const [items, setItems] = useState<Item[]>(initialTierLists);
+  const [items, setItems] = useState<Item[]>([]);
+  const [userId, setUserId] = useState<string | null>(null);
   const [newGroupName, setNewGroupName] = useState("");
   const [selectedItem, setSelectedItem] = useState<string | null>(null);
   const [currentPath, setCurrentPath] = useState<string[]>([]);
   const [isGroupDialogOpen, setIsGroupDialogOpen] = useState(false);
   const [isTierListDialogOpen, setIsTierListDialogOpen] = useState(false);
   const [newTierListName, setNewTierListName] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const router = useRouter();
 
-  const handleCreateGroup = () => {
-    if (newGroupName.trim()) {
-      const newGroup: Group = {
-        id: `group-${Date.now()}`,
-        name: newGroupName,
-        items: [],
-        isGroup: true,
-      };
-      setItems([...items, newGroup]);
-      setNewGroupName("");
-      setIsGroupDialogOpen(false);
+  // Fetch user content on mount
+  useEffect(() => {
+    const fetchUserContent = async () => {
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (session?.user) {
+          setUserId(session.user.id);
+          const content = await getUserContent(session.user.id);
+
+          // Transform the data into the required format
+          const transformedItems: Item[] = [
+            ...content.groups.map(
+              (group): GroupWithItems => ({
+                ...group,
+                items: [],
+                isGroup: true,
+              })
+            ),
+            ...content.tierLists.map(
+              (tierList): TierListWithStats => ({
+                ...tierList,
+                creator: "You",
+                likes: 0,
+                views: 0,
+                image: "/placeholder.svg?height=100&width=200",
+              })
+            ),
+          ];
+          setItems(transformedItems);
+        }
+      } catch (error) {
+        console.error("Error fetching content:", error);
+        setError("Failed to load content");
+      }
+    };
+
+    fetchUserContent();
+  }, []);
+
+  const handleCreateGroup = async () => {
+    if (newGroupName.trim() && userId) {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const newGroup = await createGroup(userId, newGroupName);
+        setItems([...items, { ...newGroup, items: [], isGroup: true }]);
+        setNewGroupName("");
+        setIsGroupDialogOpen(false);
+      } catch (error) {
+        console.error("Error creating group:", error);
+        setError("Failed to create group");
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
-  const handleDeleteItem = (itemId: string) => {
-    const deleteRecursively = (items: Item[]): Item[] => {
-      return items.filter((item) => {
-        if ("isGroup" in item && item.id === itemId) {
-          return false;
+  const handleDeleteItem = async (itemId: string) => {
+    setError(null);
+    try {
+      await deleteGroup(itemId);
+      const deleteRecursively = (items: Item[]): Item[] => {
+        return items.filter((item) => {
+          if ("isGroup" in item && item.id === itemId) {
+            return false;
+          }
+          if ("isGroup" in item) {
+            item.items = deleteRecursively(item.items);
+          }
+          return true;
+        });
+      };
+      setItems(deleteRecursively(items));
+    } catch (error) {
+      console.error("Error deleting group:", error);
+      setError("Failed to delete group");
+    }
+  };
+
+  const handleCreateTierList = async () => {
+    if (newTierListName.trim() && userId) {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const newTierList = await createTierList(userId, newTierListName);
+        if (!newTierList) {
+          throw new Error("Failed to create tier list");
         }
-        if ("isGroup" in item) {
-          item.items = deleteRecursively(item.items);
-        }
-        return true;
-      });
-    };
-    setItems(deleteRecursively(items));
+        setItems([
+          ...items,
+          {
+            ...newTierList,
+            creator: "You",
+            likes: 0,
+            views: 0,
+            image: "/placeholder.svg?height=100&width=200",
+          },
+        ]);
+        setNewTierListName("");
+        setIsTierListDialogOpen(false);
+        router.refresh(); // Refresh the page to update the data
+      } catch (error) {
+        console.error("Error creating tier list:", error);
+        setError("Failed to create tier list");
+      } finally {
+        setIsLoading(false);
+      }
+    }
   };
 
   const sensors = useSensors(
@@ -132,7 +191,7 @@ export default function DashboardContent() {
     })
   );
 
-  const onDragEnd = (event: DragEndEvent) => {
+  const onDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over) return;
 
@@ -140,7 +199,26 @@ export default function DashboardContent() {
       setItems((items) => {
         const oldIndex = items.findIndex((item) => item.id === active.id);
         const newIndex = items.findIndex((item) => item.id === over.id);
-        return arrayMove(items, oldIndex, newIndex);
+        const newItems = arrayMove(items, oldIndex, newIndex);
+
+        // Update positions in database
+        const item = newItems[newIndex];
+        if ("isGroup" in item) {
+          updateGroupPosition(item.id, newIndex).catch((error) => {
+            console.error("Error updating group position:", error);
+            setError("Failed to update position");
+          });
+        } else {
+          const currentGroup = currentPath.length > 0 ? currentPath[currentPath.length - 1] : null;
+          if (currentGroup) {
+            updateTierListPosition(currentGroup, item.id, newIndex).catch((error) => {
+              console.error("Error updating tier list position:", error);
+              setError("Failed to update position");
+            });
+          }
+        }
+
+        return newItems;
       });
     }
   };
@@ -160,7 +238,7 @@ export default function DashboardContent() {
   const getCurrentItems = (): Item[] => {
     let currentItems = items;
     for (const groupId of currentPath) {
-      const group = currentItems.find((item) => "isGroup" in item && item.id === groupId) as Group;
+      const group = currentItems.find((item) => "isGroup" in item && item.id === groupId) as GroupWithItems;
       if (group) {
         currentItems = group.items;
       } else {
@@ -194,6 +272,11 @@ export default function DashboardContent() {
       <div className="flex flex-col min-h-screen bg-[#FAFAFA]">
         <Header isLoggedIn={true} />
         <main className="flex-1 p-6 space-y-6">
+          {error && (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+              <span className="block sm:inline">{error}</span>
+            </div>
+          )}
           <div className="flex justify-between items-center mb-6">
             <div className="flex items-center space-x-2">
               <h1 className="text-2xl font-bold">Dashboard</h1>
@@ -212,13 +295,13 @@ export default function DashboardContent() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onSelect={() => setIsGroupDialogOpen(true)}>
-                  <Folder className="w-4 h-4 mr-2" />
-                  Group
-                </DropdownMenuItem>
                 <DropdownMenuItem onSelect={() => setIsTierListDialogOpen(true)}>
                   <BarChart className="w-4 h-4 mr-2" />
                   Tier List
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => setIsGroupDialogOpen(true)}>
+                  <Folder className="w-4 h-4 mr-2" />
+                  Group
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -235,8 +318,12 @@ export default function DashboardContent() {
                     value={newGroupName}
                     onChange={(e) => setNewGroupName(e.target.value)}
                   />
-                  <Button onClick={handleCreateGroup} className="w-full bg-blue-600 hover:bg-blue-700">
-                    Create Group
+                  <Button
+                    onClick={handleCreateGroup}
+                    className="w-full bg-blue-600 hover:bg-blue-700"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? "Creating..." : "Create Group"}
                   </Button>
                 </div>
               </DialogContent>
@@ -255,55 +342,49 @@ export default function DashboardContent() {
                     onChange={(e) => setNewTierListName(e.target.value)}
                   />
                   <Button
-                    onClick={() => {
-                      if (newTierListName.trim()) {
-                        setItems([
-                          ...items,
-                          {
-                            id: `tierlist-${Date.now()}`,
-                            name: newTierListName,
-                            creator: "You",
-                            likes: 0,
-                            views: 0,
-                            image: "/placeholder.svg?height=100&width=200",
-                          },
-                        ]);
-                        setNewTierListName("");
-                        setIsTierListDialogOpen(false);
-                      }
-                    }}
+                    onClick={handleCreateTierList}
                     className="w-full bg-blue-600 hover:bg-blue-700"
+                    disabled={isLoading}
                   >
-                    Create Tier List
+                    {isLoading ? "Creating..." : "Create Tier List"}
                   </Button>
                 </div>
               </DialogContent>
             </Dialog>
           </div>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            <SortableContext items={getCurrentItems().map((item) => item.id)} strategy={horizontalListSortingStrategy}>
-              {getCurrentItems().map((item) => (
-                <SortableItem
-                  key={item.id}
-                  id={item.id}
-                  onClick={() => handleItemClick(item)}
-                  onDoubleClick={() => handleItemDoubleClick(item)}
-                >
-                  <div>
-                    {"isGroup" in item ? (
-                      <GroupCard
-                        group={item}
-                        isSelected={selectedItem === item.id}
-                        onDelete={() => handleDeleteItem(item.id)}
-                      />
-                    ) : (
-                      <TierListCard tierList={item} isSelected={selectedItem === item.id} />
-                    )}
-                  </div>
-                </SortableItem>
-              ))}
-            </SortableContext>
-          </div>
+          {getCurrentItems().length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-gray-500 text-lg">No items found. Start by creating a new Tier List or Group!</p>
+            </div>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              <SortableContext
+                items={getCurrentItems().map((item) => item.id)}
+                strategy={horizontalListSortingStrategy}
+              >
+                {getCurrentItems().map((item) => (
+                  <SortableItem
+                    key={item.id}
+                    id={item.id}
+                    onClick={() => handleItemClick(item)}
+                    onDoubleClick={() => handleItemDoubleClick(item)}
+                  >
+                    <div>
+                      {"isGroup" in item ? (
+                        <GroupCard
+                          group={item}
+                          isSelected={selectedItem === item.id}
+                          onDelete={() => handleDeleteItem(item.id)}
+                        />
+                      ) : (
+                        <TierListCard tierList={item} isSelected={selectedItem === item.id} />
+                      )}
+                    </div>
+                  </SortableItem>
+                ))}
+              </SortableContext>
+            </div>
+          )}
         </main>
       </div>
     </DndContext>
@@ -350,13 +431,15 @@ function SortableItem({ id, children, onClick, onDoubleClick }: SortableItemProp
   );
 }
 
-interface GroupCardProps {
-  group: Group;
+function GroupCard({
+  group,
+  isSelected,
+  onDelete,
+}: {
+  group: GroupWithItems;
   isSelected: boolean;
   onDelete: () => void;
-}
-
-function GroupCard({ group, isSelected, onDelete }: GroupCardProps) {
+}) {
   return (
     <Card
       role="button"
@@ -389,12 +472,7 @@ function GroupCard({ group, isSelected, onDelete }: GroupCardProps) {
   );
 }
 
-interface TierListCardProps {
-  tierList: TierList;
-  isSelected: boolean;
-}
-
-function TierListCard({ tierList, isSelected }: TierListCardProps) {
+function TierListCard({ tierList, isSelected }: { tierList: TierListWithStats; isSelected: boolean }) {
   return (
     <Card
       role="button"
@@ -402,9 +480,9 @@ function TierListCard({ tierList, isSelected }: TierListCardProps) {
         isSelected ? "border-blue-500 shadow-blue-200" : "border-transparent"
       }`}
     >
-      <img src={tierList.image || "/placeholder.svg"} alt={tierList.name} className="w-full h-32 object-cover" />
+      <img src={tierList.image || "/placeholder.svg"} alt={tierList.title} className="w-full h-32 object-cover" />
       <CardContent className="p-3">
-        <h3 className="font-semibold text-lg mb-1">{tierList.name}</h3>
+        <h3 className="font-semibold text-lg mb-1">{tierList.title}</h3>
         <div className="flex items-center text-sm text-gray-500 mb-1">
           <User className="w-4 h-4 mr-1" />
           {tierList.creator}

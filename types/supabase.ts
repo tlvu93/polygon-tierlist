@@ -101,6 +101,55 @@ export interface Database {
           created_at?: string;
         };
       };
+      groups: {
+        Row: {
+          id: string;
+          user_id: string;
+          name: string;
+          parent_group_id: string | null;
+          position: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          name: string;
+          parent_group_id?: string | null;
+          position: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          name?: string;
+          parent_group_id?: string | null;
+          position?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      group_tier_lists: {
+        Row: {
+          group_id: string;
+          tier_list_id: string;
+          position: number;
+          created_at: string;
+        };
+        Insert: {
+          group_id: string;
+          tier_list_id: string;
+          position: number;
+          created_at?: string;
+        };
+        Update: {
+          group_id?: string;
+          tier_list_id?: string;
+          position?: number;
+          created_at?: string;
+        };
+      };
     };
     Views: {
       [_ in never]: never;
