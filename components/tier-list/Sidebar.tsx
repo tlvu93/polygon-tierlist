@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useDebounce } from "@/hooks/useDebounce";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -34,10 +34,20 @@ export default function Sidebar({
 }: SidebarProps) {
   const [currentTab, setCurrentTab] = useState("editor");
   const [sortingConfigs, setSortingConfigs] = useState<SortingConfig[]>([]);
-  const [localPropertyNames, setLocalPropertyNames] = useState<string[]>(propertyNames);
+  const [localPropertyNames, setLocalPropertyNames] = useState<string[]>(
+    currentDiagram?.properties.map((p) => p.name) || propertyNames
+  );
   const [localPropertyValues, setLocalPropertyValues] = useState<number[]>(
     Array.from({ length: propertyCount }, (_, i) => currentDiagram?.properties[i]?.value ?? 5)
   );
+
+  // Update local state when current diagram changes
+  useEffect(() => {
+    if (currentDiagram) {
+      setLocalPropertyNames(currentDiagram.properties.map((p) => p.name));
+      setLocalPropertyValues(Array.from({ length: propertyCount }, (_, i) => currentDiagram.properties[i]?.value ?? 5));
+    }
+  }, [currentDiagram, propertyCount]);
 
   const debouncedPropertyNameChange = useDebounce((index: number, name: string) => {
     onPropertyChange(index, { name });
@@ -159,7 +169,7 @@ export default function Sidebar({
                     >
                       {Array.from({ length: propertyCount }, (_, i) => (
                         <option key={i} value={i}>
-                          {propertyNames[i]}
+                          {currentDiagram?.properties[i]?.name || propertyNames[i]}
                         </option>
                       ))}
                     </select>
