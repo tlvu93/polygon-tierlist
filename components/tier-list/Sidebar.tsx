@@ -86,7 +86,7 @@ export default function Sidebar({
   };
 
   return (
-    <aside className="w-full md:w-[350px] lg:w-[400px] bg-slate-100 border-l overflow-y-auto">
+    <aside className="w-full md:pt-16 bg-slate-100 border-l overflow-y-auto">
       <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full">
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="editor">Editor</TabsTrigger>
