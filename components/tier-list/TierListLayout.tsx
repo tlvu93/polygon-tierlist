@@ -112,7 +112,7 @@ export default function TierListLayout({
     } catch (error) {
       console.error("Error loading diagrams:", error);
     }
-  }, [id, supabase]);
+  }, [id, supabase, propertyCount]);
 
   useEffect(() => {
     loadDiagrams();
