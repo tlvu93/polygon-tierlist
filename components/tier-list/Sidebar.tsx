@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useDebounce } from "@/hooks/useDebounce";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
@@ -33,6 +34,20 @@ export default function Sidebar({
 }: SidebarProps) {
   const [currentTab, setCurrentTab] = useState("editor");
   const [sortingConfigs, setSortingConfigs] = useState<SortingConfig[]>([]);
+  const [localPropertyNames, setLocalPropertyNames] = useState<string[]>(propertyNames);
+  const [localPropertyValues, setLocalPropertyValues] = useState<number[]>(
+    Array.from({ length: propertyCount }, (_, i) => currentDiagram?.properties[i]?.value ?? 5)
+  );
+
+  const debouncedPropertyNameChange = useDebounce((index: number, name: string) => {
+    onPropertyChange(index, { name });
+  }, 300);
+
+  const debouncedPropertyValueChange = useDebounce((index: number, value: number) => {
+    onPropertyChange(index, { value });
+  }, 150);
+
+  const debouncedSortingChange = useDebounce(onSortingChange, 150);
 
   const handlePropertyCountChange = (increment: boolean) => {
     const newCount = increment ? propertyCount + 1 : propertyCount - 1;
@@ -90,17 +105,30 @@ export default function Sidebar({
                       <div className="mb-1 cursor-pointer hover:bg-slate-100 transition-colors py-1 px-1">
                         <input
                           type="text"
-                          value={propertyNames[i]}
+                          value={localPropertyNames[i]}
                           onChange={(e) => {
-                            onPropertyChange(i, { name: e.target.value });
+                            const newValue = e.target.value;
+                            setLocalPropertyNames((prev) => {
+                              const updated = [...prev];
+                              updated[i] = newValue;
+                              return updated;
+                            });
+                            debouncedPropertyNameChange(i, newValue);
                           }}
                           className="w-full bg-transparent border-0 outline-none border-b border-solid border-slate-200 hover:border-slate-400 focus:border-slate-400 px-1"
                         />
                       </div>
                       <Slider
-                        value={[currentDiagram?.properties[i]?.value ?? 5]}
+                        value={[localPropertyValues[i]]}
                         onValueChange={([value]) => {
-                          onPropertyChange(i, { value });
+                          setLocalPropertyValues((prev) => {
+                            const updated = [...prev];
+                            updated[i] = value;
+                            return updated;
+                          });
+                          requestAnimationFrame(() => {
+                            debouncedPropertyValueChange(i, value);
+                          });
                         }}
                         max={10}
                         step={1}
@@ -126,7 +154,7 @@ export default function Sidebar({
                         const newConfigs = [...sortingConfigs];
                         newConfigs[index].property = parseInt(e.target.value);
                         setSortingConfigs(newConfigs);
-                        onSortingChange(newConfigs);
+                        debouncedSortingChange(newConfigs);
                       }}
                     >
                       {Array.from({ length: propertyCount }, (_, i) => (
@@ -141,7 +169,7 @@ export default function Sidebar({
                       onClick={() => {
                         const newConfigs = sortingConfigs.filter((_, i) => i !== index);
                         setSortingConfigs(newConfigs);
-                        onSortingChange(newConfigs);
+                        debouncedSortingChange(newConfigs);
                       }}
                     >
                       Remove
@@ -154,8 +182,10 @@ export default function Sidebar({
                       onValueChange={([value]) => {
                         const newConfigs = [...sortingConfigs];
                         newConfigs[index].weight = value;
-                        setSortingConfigs(newConfigs);
-                        onSortingChange(newConfigs);
+                        setSortingConfigs(newConfigs); // Update local state immediately
+                        requestAnimationFrame(() => {
+                          debouncedSortingChange(newConfigs); // Debounce server update
+                        });
                       }}
                       min={0}
                       max={1}
@@ -170,7 +200,7 @@ export default function Sidebar({
                 onClick={() => {
                   const newConfigs = [...sortingConfigs, { property: 0, weight: 1 }];
                   setSortingConfigs(newConfigs);
-                  onSortingChange(newConfigs);
+                  debouncedSortingChange(newConfigs);
                 }}
                 disabled={sortingConfigs.length >= propertyCount}
               >
