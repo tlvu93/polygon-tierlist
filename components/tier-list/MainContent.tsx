@@ -99,8 +99,8 @@ export default function MainContent({
         </div>
 
         {view === "diagram" ? (
-          <div className="relative bg-slate-100 rounded-lg flex items-center justify-center p-4">
-            <div className="relative aspect-square w-full max-w-4xl mx-auto">
+          <div className="relative bg-slate-100 rounded-lg flex items-center justify-center p-4 h-[calc(100vh-12rem)]">
+            <div className="relative h-full aspect-square">
               {currentDiagram ? (
                 <PolygonChart stats={propertiesToStats(currentDiagram)} />
               ) : (
