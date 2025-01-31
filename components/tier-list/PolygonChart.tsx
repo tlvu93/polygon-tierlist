@@ -23,7 +23,7 @@ export function PolygonChart({
   }));
 
   return (
-    <div className={cn("w-full bg-slate-900/95 rounded-lg", isPreview ? "p-1" : "p-4", className)} {...props}>
+    <div className={cn("w-full h-full bg-slate-900/95 rounded-lg", isPreview ? "p-1" : "p-4", className)} {...props}>
       <div
         style={{
           width: "100%",
