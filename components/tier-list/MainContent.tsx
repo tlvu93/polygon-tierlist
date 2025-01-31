@@ -5,11 +5,10 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import { ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
 import { Diagram } from "./types";
 import { PolygonChart } from "./PolygonChart";
-import DiagramList from "./DiagramList";
 
 interface MainContentProps {
   diagrams: Diagram[];
@@ -28,9 +27,6 @@ export default function MainContent({
   onDiagramSelect,
   onDiagramDelete,
   onDiagramNameChange,
-  showDiagramList = false,
-  sortedDiagrams,
-  onAddDiagram,
 }: MainContentProps) {
   const [view, setView] = useState<"diagram" | "table">("diagram");
   const [isEditingName, setIsEditingName] = useState(false);
