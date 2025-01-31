@@ -1,5 +1,5 @@
 import LoginForm from "@/components/auth/LoginForm";
-import { createClient } from "@/app/utils/supabase/server";
+import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";

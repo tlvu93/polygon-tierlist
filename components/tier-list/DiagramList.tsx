@@ -57,7 +57,6 @@ export default function DiagramList({ diagrams, currentDiagramId, onDiagramSelec
                 )}
                 <div className="flex-1 min-w-0">
                   <div className="font-medium truncate">{diagram.name}</div>
-                  <div className="text-xs text-slate-500">Diagram {diagram.id}</div>
                 </div>
               </div>
               <div className="mt-3 aspect-square w-20 mx-auto">
