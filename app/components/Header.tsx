@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ArrowLeft } from "lucide-react";
+import { usePathname } from "next/navigation";
 
 interface HeaderProps {
   tierListName?: string;
@@ -42,10 +43,13 @@ export default function Header({ tierListName, isLoggedIn, onTierListNameChange 
       getUser();
     }
   }, [isLoggedIn, supabase.auth]);
+  const pathname = usePathname();
+  const showBackArrow = isLoggedIn && pathname !== "/dashboard";
+
   return (
     <header className="flex items-center justify-between px-6 py-4 bg-white border-b">
       <div className="flex items-center space-x-4">
-        {isLoggedIn && (
+        {showBackArrow && (
           <Link href="/dashboard" className="hover:text-blue-600">
             <ArrowLeft className="w-6 h-6" />
           </Link>
