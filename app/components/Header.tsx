@@ -6,14 +6,13 @@ import { createClient } from "@/utils/supabase/client";
 import { useEffect, useState } from "react";
 import { User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Bell, Search, ArrowLeft } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 
 interface HeaderProps {
   tierListName?: string;
@@ -93,15 +92,8 @@ export default function Header({ tierListName, isLoggedIn, onTierListNameChange 
             PolyTierlist
           </Link>
         )}
-        <div className="relative">
-          <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-          <Input type="search" placeholder="Search..." className="pl-9 w-64 bg-gray-100 border-none" />
-        </div>
       </div>
       <div className="flex items-center space-x-4">
-        <Button variant="ghost" size="icon" className="text-gray-500">
-          <Bell className="w-5 h-5" />
-        </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="flex items-center space-x-2">
