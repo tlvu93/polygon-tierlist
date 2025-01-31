@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer } from "recharts";
+import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from "recharts";
 
 interface PolygonChartProps extends React.HTMLAttributes<HTMLDivElement> {
   stats: { [key: string]: number };
@@ -24,6 +24,13 @@ export function PolygonChart({ stats, hideLabels = false, isPreview = false, cla
             gridType="polygon"
             stroke="rgb(75, 85, 99)" // Tailwind gray-600
             strokeWidth={isPreview ? 0.5 : 1}
+            radialLines={false}
+          />
+          <PolarRadiusAxis
+            angle={90}
+            domain={[0, 10]}
+            tickCount={2}
+            tick={{ fill: "rgb(156, 163, 175)", fontSize: 12 }}
           />
           {!hideLabels && (
             <PolarAngleAxis
