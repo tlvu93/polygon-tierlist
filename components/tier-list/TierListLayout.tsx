@@ -439,7 +439,7 @@ export default function TierListLayout({
         {/* Large screens: Three-column layout */}
         <div className="hidden lg:flex flex-1">
           {/* Left column - DiagramList (20%) */}
-          <div className="w-1/5">
+          <div className="h-full w-1/5">
             <DiagramList
               diagrams={sortedDiagrams}
               currentDiagramId={currentDiagramId}
