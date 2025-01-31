@@ -131,8 +131,8 @@ export default function MainContent({
               </div>
 
               {view === "diagram" ? (
-                <div className="relative bg-slate-100 rounded-lg flex items-center justify-center p-4 h-[calc(100vh-12rem)]">
-                  <div className="relative h-full aspect-square">
+                <div className="relative bg-slate-100 rounded-lg flex items-center justify-center p-8 h-[calc(100vh-12rem)]">
+                  <div className="relative w-full h-full flex items-center justify-center">
                     {currentDiagram ? (
                       <PolygonChart stats={propertiesToStats(currentDiagram)} />
                     ) : (
@@ -249,8 +249,8 @@ export default function MainContent({
           </div>
 
           {view === "diagram" ? (
-            <div className="relative bg-slate-100 rounded-lg flex items-center justify-center p-4 h-[calc(100vh-12rem)]">
-              <div className="relative h-full aspect-square">
+            <div className="relative bg-slate-100 rounded-lg flex items-center justify-center p-8 h-[calc(100vh-12rem)]">
+              <div className="relative w-full h-full flex items-center justify-center">
                 {currentDiagram ? (
                   <PolygonChart stats={propertiesToStats(currentDiagram)} />
                 ) : (
