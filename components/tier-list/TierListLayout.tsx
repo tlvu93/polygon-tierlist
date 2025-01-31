@@ -61,8 +61,48 @@ export default function TierListLayout({
         });
       }
 
-      setDiagrams(loadedDiagrams);
-      if (loadedDiagrams.length > 0) {
+      if (loadedDiagrams.length === 0) {
+        // Create a default diagram if none exist
+        const { data: newDiagram, error: diagramError } = await supabase
+          .from("diagrams")
+          .insert({
+            tier_list_id: id,
+            name: "Default Diagram",
+            position: 0,
+          })
+          .select()
+          .single();
+
+        if (diagramError) throw diagramError;
+
+        // Insert default properties for the new diagram
+        const defaultProperties = Array(propertyCount)
+          .fill(null)
+          .map((_, i) => ({
+            diagram_id: newDiagram.id,
+            name: `Property ${i + 1}`,
+            value: 5,
+            position: i,
+          }));
+
+        const { data: propertiesData, error: propertiesError } = await supabase
+          .from("diagram_properties")
+          .insert(defaultProperties)
+          .select();
+
+        if (propertiesError) throw propertiesError;
+
+        const defaultDiagram: Diagram = {
+          id: newDiagram.id,
+          name: newDiagram.name,
+          thumbnail: newDiagram.thumbnail,
+          properties: propertiesData.map((p) => ({ name: p.name, value: p.value })),
+        };
+
+        setDiagrams([defaultDiagram]);
+        setCurrentDiagramId(defaultDiagram.id);
+      } else {
+        setDiagrams(loadedDiagrams);
         setCurrentDiagramId(loadedDiagrams[0].id);
       }
     } catch (error) {
