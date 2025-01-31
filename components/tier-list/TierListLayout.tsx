@@ -6,8 +6,12 @@ import MainContent from "./MainContent";
 import Sidebar from "./Sidebar";
 import DiagramList from "./DiagramList";
 import { createClient } from "@/utils/supabase/client";
-
 import { Diagram, DiagramProperty } from "./types";
+
+interface SortingConfig {
+  property: number;
+  weight: number;
+}
 
 interface TierListLayoutProps {
   tierListName?: string;
@@ -22,6 +26,7 @@ export default function TierListLayout({
   const [propertyCount, setPropertyCount] = useState(5);
   const [currentDiagramId, setCurrentDiagramId] = useState("");
   const [diagrams, setDiagrams] = useState<Diagram[]>([]);
+  const [sortingConfigs, setSortingConfigs] = useState<SortingConfig[]>([]);
   const supabase = createClient();
 
   // Load diagrams and properties
@@ -70,6 +75,30 @@ export default function TierListLayout({
   }, [loadDiagrams]);
 
   const currentDiagram = useMemo(() => diagrams.find((d) => d.id === currentDiagramId), [diagrams, currentDiagramId]);
+
+  const sortedDiagrams = useMemo(() => {
+    if (sortingConfigs.length === 0) return diagrams;
+
+    return [...diagrams].sort((a, b) => {
+      let scoreA = 0;
+      let scoreB = 0;
+      const totalWeight = sortingConfigs.reduce((sum, config) => sum + config.weight, 0);
+
+      // Normalize weights if total is not 1
+      const normalizer = totalWeight === 0 ? 1 : totalWeight;
+
+      sortingConfigs.forEach((config) => {
+        const propA = a.properties[config.property]?.value || 0;
+        const propB = b.properties[config.property]?.value || 0;
+        const normalizedWeight = config.weight / normalizer;
+
+        scoreA += propA * normalizedWeight;
+        scoreB += propB * normalizedWeight;
+      });
+
+      return scoreB - scoreA; // Sort in descending order (highest score first)
+    });
+  }, [diagrams, sortingConfigs]);
 
   // Pre-compute property names for the current diagram
   const propertyNames = useMemo(() => {
@@ -134,39 +163,71 @@ export default function TierListLayout({
       if (!currentDiagram) return;
 
       try {
-        // First update the database
-        const { error } = await supabase.from("diagram_properties").upsert({
-          diagram_id: currentDiagram.id,
-          name: change.name || `Property ${index + 1}`,
-          value: change.value || 5,
-          position: index,
-        });
+        if (change.name !== undefined) {
+          // If it's a name change, update all diagrams' properties at this position
+          const { data: diagrams, error: diagramsError } = await supabase
+            .from("diagrams")
+            .select("id")
+            .eq("tier_list_id", id);
 
-        if (error) throw error;
+          if (diagramsError) throw diagramsError;
+          if (!diagrams || diagrams.length === 0) throw new Error("No diagrams found");
 
-        // Then update local state
-        setDiagrams((prevDiagrams) => {
-          const updatedDiagram = { ...currentDiagram };
-          const newProperties = [...updatedDiagram.properties];
+          // Update properties for each diagram
+          const promises = diagrams.map((d) =>
+            supabase
+              .from("diagram_properties")
+              .update({ name: change.name })
+              .eq("diagram_id", d.id)
+              .eq("position", index)
+          );
 
-          if (index >= newProperties.length) {
-            while (newProperties.length <= index) {
-              newProperties.push({
-                name: `Property ${newProperties.length + 1}`,
-                value: 5,
-              });
+          const results = await Promise.all(promises);
+          const updateError = results.find((r) => r.error);
+          if (updateError) throw updateError.error;
+
+          // Update all diagrams in local state
+          setDiagrams((prevDiagrams) =>
+            prevDiagrams.map((diagram) => ({
+              ...diagram,
+              properties: diagram.properties.map((prop, i) => (i === index ? { ...prop, name: change.name! } : prop)),
+            }))
+          );
+        } else if (change.value !== undefined) {
+          // If it's a value change, only update the current diagram
+          const { error } = await supabase.from("diagram_properties").upsert({
+            diagram_id: currentDiagram.id,
+            name: currentDiagram.properties[index]?.name || `Property ${index + 1}`,
+            value: change.value,
+            position: index,
+          });
+
+          if (error) throw error;
+
+          // Update only current diagram in local state
+          setDiagrams((prevDiagrams) => {
+            const updatedDiagram = { ...currentDiagram };
+            const newProperties = [...updatedDiagram.properties];
+
+            if (index >= newProperties.length) {
+              while (newProperties.length <= index) {
+                newProperties.push({
+                  name: `Property ${newProperties.length + 1}`,
+                  value: 5,
+                });
+              }
             }
-          }
 
-          newProperties[index] = {
-            ...newProperties[index],
-            ...change,
-          };
+            newProperties[index] = {
+              ...newProperties[index],
+              value: change.value ?? 5, // Provide default value if undefined
+            };
 
-          updatedDiagram.properties = newProperties;
+            updatedDiagram.properties = newProperties;
 
-          return prevDiagrams.map((diagram) => (diagram.id === currentDiagramId ? updatedDiagram : diagram));
-        });
+            return prevDiagrams.map((diagram) => (diagram.id === currentDiagramId ? updatedDiagram : diagram));
+          });
+        }
       } catch (error) {
         console.error("Error updating property:", error);
       }
@@ -288,7 +349,7 @@ export default function TierListLayout({
       <Header tierListName={tierListName} isLoggedIn={true} onTierListNameChange={handleTierListNameChange} />
       <div className="flex flex-1 overflow-hidden">
         <DiagramList
-          diagrams={diagrams}
+          diagrams={sortedDiagrams}
           currentDiagramId={currentDiagramId}
           onDiagramSelect={setCurrentDiagramId}
           onAddDiagram={handleAddDiagram}
@@ -308,6 +369,7 @@ export default function TierListLayout({
           currentDiagram={currentDiagram}
           propertyNames={propertyNames}
           onPropertyChange={handlePropertyChange}
+          onSortingChange={setSortingConfigs}
         />
       </div>
     </div>
