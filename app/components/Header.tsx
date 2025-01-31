@@ -1,18 +1,18 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { createClient } from "@/utils/supabase/client";
 import { useEffect, useState } from "react";
 import { User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Bell, Search, ArrowLeft } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 
 interface HeaderProps {
   tierListName?: string;
@@ -41,7 +41,7 @@ export default function Header({ tierListName, isLoggedIn, onTierListNameChange 
     if (isLoggedIn) {
       getUser();
     }
-  }, [isLoggedIn]);
+  }, [isLoggedIn, supabase.auth]);
   return (
     <header className="flex items-center justify-between px-6 py-4 bg-white border-b">
       <div className="flex items-center space-x-4">
@@ -92,22 +92,17 @@ export default function Header({ tierListName, isLoggedIn, onTierListNameChange 
             PolyTierlist
           </Link>
         )}
-        <div className="relative">
-          <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-          <Input type="search" placeholder="Search..." className="pl-9 w-64 bg-gray-100 border-none" />
-        </div>
       </div>
       <div className="flex items-center space-x-4">
-        <Button variant="ghost" size="icon" className="text-gray-500">
-          <Bell className="w-5 h-5" />
-        </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="flex items-center space-x-2">
-              <img
-                src={user?.user_metadata?.avatar_url || "/placeholder.svg?height=32&width=32"}
+              <Image
+                src={user?.user_metadata?.avatar_url || "/placeholder.svg"}
                 alt="User"
-                className="w-8 h-8 rounded-full"
+                width={32}
+                height={32}
+                className="rounded-full"
               />
               <span className="text-sm font-medium">{user?.user_metadata?.full_name || "User"}</span>
             </Button>

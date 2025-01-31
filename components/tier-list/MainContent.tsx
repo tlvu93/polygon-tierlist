@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { useDebounce } from "@/hooks/useDebounce";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -25,9 +26,17 @@ export default function MainContent({
 }: MainContentProps) {
   const [view, setView] = useState<"diagram" | "table">("diagram");
   const [isEditingName, setIsEditingName] = useState(false);
+  const [isPending, startTransition] = useTransition();
+  const [localName, setLocalName] = useState("");
 
   const currentDiagramIndex = diagrams.findIndex((d) => d.id === currentDiagramId);
   const currentDiagram = diagrams[currentDiagramIndex];
+
+  const debouncedNameChange = useDebounce((id: string, name: string) => {
+    startTransition(() => {
+      onDiagramNameChange?.(id, name);
+    });
+  }, 700);
 
   const handlePrevDiagram = () => {
     if (currentDiagramIndex > 0) {
@@ -61,21 +70,28 @@ export default function MainContent({
                 if (!isEditingName) {
                   e.preventDefault();
                   setIsEditingName(true);
+                  setLocalName(currentDiagram?.name || "");
                 }
               }}
             >
               {isEditingName ? (
                 <input
                   type="text"
-                  value={currentDiagram?.name || ""}
-                  onChange={(e) => onDiagramNameChange?.(currentDiagramId, e.target.value)}
+                  value={localName}
+                  onChange={(e) => {
+                    const newValue = e.target.value;
+                    setLocalName(newValue);
+                    debouncedNameChange(currentDiagramId, newValue);
+                  }}
                   onBlur={() => setIsEditingName(false)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       setIsEditingName(false);
                     }
                   }}
-                  className="text-2xl font-semibold bg-transparent border-b border-slate-300 outline-none w-full"
+                  className={`text-2xl font-semibold bg-transparent border-b border-slate-300 outline-none w-full ${
+                    isPending ? "text-slate-400" : ""
+                  }`}
                   autoFocus
                 />
               ) : (
@@ -99,8 +115,8 @@ export default function MainContent({
         </div>
 
         {view === "diagram" ? (
-          <div className="relative bg-slate-100 rounded-lg flex items-center justify-center p-4">
-            <div className="relative aspect-square w-full max-w-4xl mx-auto">
+          <div className="relative bg-slate-100 rounded-lg flex items-center justify-center p-4 h-[calc(100vh-12rem)]">
+            <div className="relative h-full aspect-square">
               {currentDiagram ? (
                 <PolygonChart stats={propertiesToStats(currentDiagram)} />
               ) : (

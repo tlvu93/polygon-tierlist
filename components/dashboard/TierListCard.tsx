@@ -1,4 +1,5 @@
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import Image from "next/image";
 import { Heart, BarChart, User } from "lucide-react";
 import { TierListWithStats } from "./types";
 
@@ -15,7 +16,9 @@ export function TierListCard({ tierList, isSelected }: TierListCardProps) {
         isSelected ? "border-blue-500 shadow-blue-200" : "border-transparent hover:border-gray-200"
       }`}
     >
-      <img src={tierList.image || "/placeholder.svg"} alt={tierList.title} className="w-full h-32 object-cover" />
+      <div className="relative w-full h-32">
+        <Image src={tierList.image || "/placeholder.svg"} alt={tierList.title} fill className="object-cover" />
+      </div>
       <CardContent className="p-3">
         <h3 className="font-semibold text-lg mb-1">{tierList.title}</h3>
         <div className="flex items-center text-sm text-gray-500 mb-1">
