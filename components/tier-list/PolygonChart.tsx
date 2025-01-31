@@ -17,36 +17,44 @@ export function PolygonChart({ stats, hideLabels = false, isPreview = false, cla
   }));
 
   return (
-    <div className={cn("w-full aspect-square", className)} {...props}>
+    <div className={cn("w-full aspect-square bg-slate-900/95 rounded-lg p-4", className)} {...props}>
       <ResponsiveContainer width="100%" height="100%">
-        <RadarChart cx="50%" cy="50%" outerRadius="80%" data={data}>
+        <RadarChart cx="50%" cy="50%" outerRadius={isPreview ? "130%" : "65%"} data={data}>
           <PolarGrid
             gridType="polygon"
-            stroke="rgb(75, 85, 99)" // Tailwind gray-600
-            strokeWidth={isPreview ? 0.5 : 1}
-            radialLines={false}
+            stroke="rgba(209, 213, 219, 0.2)" // Slightly more visible grid lines
+            strokeWidth={1}
+            radialLines={true}
           />
           <PolarRadiusAxis
             angle={90}
             domain={[0, 10]}
             tickCount={2}
-            tick={{ fill: "rgb(156, 163, 175)", fontSize: 12 }}
+            tick={{ fill: "rgb(229, 231, 235)", fontSize: 12 }} // Smaller, lighter text
           />
           {!hideLabels && (
             <PolarAngleAxis
               dataKey="subject"
-              tick={{ fill: "rgb(156, 163, 175)", fontSize: 12 }} // Tailwind gray-400
+              tick={{ fill: "rgb(229, 231, 235)", fontSize: 12 }} // Smaller, lighter text
             />
           )}
           <Radar
             name="Stats"
             dataKey="value"
-            stroke="rgb(249, 115, 22)" // Tailwind orange-500
-            fill="rgb(249, 115, 22)" // Tailwind orange-500
-            fillOpacity={0.1}
-            dot={{
-              fill: "rgb(249, 115, 22)", // Tailwind orange-500
-              r: isPreview ? 2 : 4,
+            stroke="#ea580c" // Deeper orange stroke
+            strokeWidth={isPreview ? 1 : 2}
+            fill="#ea580c" // Deeper orange fill
+            fillOpacity={0.2} // Slightly higher opacity for better visibility
+            dot={(props) => {
+              const { cx, cy } = props;
+              const size = isPreview ? 1 : 8;
+              return (
+                <g>
+                  <circle cx={cx} cy={cy} r={isPreview ? size + 1 : size + 2} fill="white" opacity={0.25} />
+                  <circle cx={cx} cy={cy} r={isPreview ? size + 0.5 : size + 1} fill="#ea580c" opacity={0.7} />
+                  <circle cx={cx} cy={cy} r={size} fill="#ea580c" />
+                </g>
+              );
             }}
           />
         </RadarChart>
