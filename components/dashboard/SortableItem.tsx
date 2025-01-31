@@ -2,7 +2,8 @@
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import React from "react";
+import React, { useRef } from "react";
+import { useIsMobile } from "@/components/ui/use-mobile";
 
 interface SortableItemProps {
   id: string;
@@ -19,18 +20,47 @@ export function SortableItem({ id, children, onClick, onDoubleClick }: SortableI
     transition,
   };
 
-  return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="relative touch-none">
-      <div
-        className="h-full cursor-move"
-        onClick={(e) => {
-          e.stopPropagation();
+  const isMobile = useIsMobile();
+  const lastTap = useRef<number>(0);
+  const DOUBLE_TAP_DELAY = 300;
+
+  const handleTouch = (e: React.TouchEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const currentTime = new Date().getTime();
+    const tapLength = currentTime - lastTap.current;
+
+    if (tapLength < DOUBLE_TAP_DELAY && tapLength > 0) {
+      onDoubleClick();
+      lastTap.current = 0;
+    } else {
+      lastTap.current = currentTime;
+      setTimeout(() => {
+        if (lastTap.current === currentTime) {
           onClick();
+        }
+      }, DOUBLE_TAP_DELAY);
+    }
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="relative">
+      <div
+        className="h-full cursor-pointer md:cursor-move"
+        onClick={(e) => {
+          if (!isMobile) {
+            e.stopPropagation();
+            onClick();
+          }
         }}
         onDoubleClick={(e) => {
-          e.stopPropagation();
-          onDoubleClick();
+          if (!isMobile) {
+            e.stopPropagation();
+            onDoubleClick();
+          }
         }}
+        onTouchEnd={handleTouch}
       >
         <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-gray-100 opacity-0 group-hover:opacity-100 flex items-center justify-center pointer-events-none">
           ⋮
