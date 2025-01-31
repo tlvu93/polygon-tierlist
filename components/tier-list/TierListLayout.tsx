@@ -272,7 +272,7 @@ export default function TierListLayout({
         console.error("Error updating property:", error);
       }
     },
-    [currentDiagram, currentDiagramId, supabase]
+    [currentDiagram, currentDiagramId, supabase, diagrams, id]
   );
 
   const handleAddDiagram = useCallback(async () => {
@@ -325,7 +325,7 @@ export default function TierListLayout({
     } catch (error) {
       console.error("Error adding diagram:", error);
     }
-  }, [id, diagrams.length, propertyCount, supabase]);
+  }, [id, propertyCount, supabase, diagrams]);
 
   const handleDiagramDelete = useCallback(
     async (diagramId: string) => {
