@@ -1,6 +1,8 @@
 import ResetPasswordForm from "@/components/auth/ResetPasswordForm";
-import { createClient } from "@/utils/supabase/server";
+import { createClient } from "@/app/utils/supabase/server";
 import { redirect } from "next/navigation";
+
+export const dynamic = "force-dynamic";
 
 export default async function ResetPasswordPage() {
   const supabase = await createClient();

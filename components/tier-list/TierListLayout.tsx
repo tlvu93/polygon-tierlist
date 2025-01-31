@@ -241,7 +241,7 @@ export default function TierListLayout({
         console.error("Error deleting diagram:", error);
       }
     },
-    [id, currentDiagramId, diagrams, supabase]
+    [id, currentDiagramId, supabase]
   );
 
   const handleDiagramNameChange = useCallback(

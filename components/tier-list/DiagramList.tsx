@@ -1,6 +1,7 @@
 "use client";
 
 import { Diagram } from "./types";
+import Image from "next/image";
 import { PolygonChart } from "./PolygonChart";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
@@ -45,7 +46,13 @@ export default function DiagramList({ diagrams, currentDiagramId, onDiagramSelec
               <div className="flex items-center gap-2">
                 {diagram.thumbnail && (
                   <div className="w-8 h-8 bg-slate-300 rounded flex-shrink-0">
-                    <img src={diagram.thumbnail} alt={diagram.name} className="w-full h-full object-cover rounded" />
+                    <Image
+                      src={diagram.thumbnail}
+                      alt={diagram.name}
+                      width={32}
+                      height={32}
+                      className="object-cover rounded"
+                    />
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
