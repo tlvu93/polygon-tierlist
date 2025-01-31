@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useTransition } from "react";
 import { useDebounce } from "@/hooks/useDebounce";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -33,6 +33,7 @@ export default function Sidebar({
   onSortingChange,
 }: SidebarProps) {
   const [currentTab, setCurrentTab] = useState("editor");
+  const [isPending, startTransition] = useTransition();
   const [sortingConfigs, setSortingConfigs] = useState<SortingConfig[]>([]);
   const [localPropertyNames, setLocalPropertyNames] = useState<string[]>(
     currentDiagram?.properties.map((p) => p.name) || propertyNames
@@ -50,14 +51,22 @@ export default function Sidebar({
   }, [currentDiagram, propertyCount]);
 
   const debouncedPropertyNameChange = useDebounce((index: number, name: string) => {
-    onPropertyChange(index, { name });
-  }, 300);
+    startTransition(() => {
+      onPropertyChange(index, { name });
+    });
+  }, 1000);
 
   const debouncedPropertyValueChange = useDebounce((index: number, value: number) => {
-    onPropertyChange(index, { value });
+    startTransition(() => {
+      onPropertyChange(index, { value });
+    });
   }, 150);
 
-  const debouncedSortingChange = useDebounce(onSortingChange, 150);
+  const debouncedSortingChange = useDebounce((configs: SortingConfig[]) => {
+    startTransition(() => {
+      onSortingChange(configs);
+    });
+  }, 150);
 
   const handlePropertyCountChange = (increment: boolean) => {
     const newCount = increment ? propertyCount + 1 : propertyCount - 1;
@@ -125,7 +134,9 @@ export default function Sidebar({
                             });
                             debouncedPropertyNameChange(i, newValue);
                           }}
-                          className="w-full bg-transparent border-0 outline-none border-b border-solid border-slate-200 hover:border-slate-400 focus:border-slate-400 px-1"
+                          className={`w-full bg-transparent border-0 outline-none border-b border-solid border-slate-200 hover:border-slate-400 focus:border-slate-400 px-1 ${
+                            isPending ? "text-slate-400" : ""
+                          }`}
                         />
                       </div>
                       <Slider
@@ -158,7 +169,7 @@ export default function Sidebar({
                 <div key={index} className="space-y-2">
                   <div className="flex justify-between items-center">
                     <select
-                      className="w-2/3 p-2 border rounded-md"
+                      className={`w-2/3 p-2 border rounded-md ${isPending ? "text-slate-400" : ""}`}
                       value={config.property}
                       onChange={(e) => {
                         const newConfigs = [...sortingConfigs];
