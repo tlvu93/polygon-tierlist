@@ -5,11 +5,10 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import { ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
 import { Diagram } from "./types";
 import { PolygonChart } from "./PolygonChart";
-import DiagramList from "./DiagramList";
 
 interface MainContentProps {
   diagrams: Diagram[];
@@ -28,9 +27,6 @@ export default function MainContent({
   onDiagramSelect,
   onDiagramDelete,
   onDiagramNameChange,
-  showDiagramList = false,
-  sortedDiagrams,
-  onAddDiagram,
 }: MainContentProps) {
   const [view, setView] = useState<"diagram" | "table">("diagram");
   const [isEditingName, setIsEditingName] = useState(false);
@@ -69,237 +65,111 @@ export default function MainContent({
 
   return (
     <main className="flex-1 p-6 overflow-auto main-content">
-      {showDiagramList ? (
-        <Tabs defaultValue="diagram" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="diagram">Diagram</TabsTrigger>
-            <TabsTrigger value="list">Diagram List</TabsTrigger>
-          </TabsList>
-          <TabsContent value="diagram">
-            <Card className="p-6">
-              {/* Diagram content */}
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <div
-                    className="group relative"
-                    onClick={(e) => {
-                      if (!isEditingName) {
-                        e.preventDefault();
-                        setIsEditingName(true);
-                        setLocalName(currentDiagram?.name || "");
-                      }
-                    }}
-                  >
-                    {isEditingName ? (
-                      <input
-                        type="text"
-                        value={localName}
-                        onChange={(e) => {
-                          const newValue = e.target.value;
-                          setLocalName(newValue);
-                          debouncedNameChange(currentDiagramId, newValue);
-                        }}
-                        onBlur={() => setIsEditingName(false)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            setIsEditingName(false);
-                          }
-                        }}
-                        className={`text-2xl font-semibold bg-transparent border-b border-slate-300 outline-none w-full ${
-                          isPending ? "text-slate-400" : ""
-                        }`}
-                        autoFocus
-                      />
-                    ) : (
-                      <h2 className="text-2xl font-semibold cursor-pointer group-hover:text-blue-600">
-                        {currentDiagram?.name || "Untitled Diagram"}
-                      </h2>
-                    )}
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => onDiagramDelete?.(currentDiagramId)}
-                    className="h-10 w-10"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-                <Button variant="outline" onClick={() => setView(view === "diagram" ? "table" : "diagram")}>
-                  {view === "diagram" ? "Switch to Table" : "Switch to Diagram"}
-                </Button>
-              </div>
-
-              {view === "diagram" ? (
-                <div className="relative bg-slate-100 rounded-lg flex items-center justify-center p-4 h-[calc(100vh-12rem)]">
-                  <div className="relative h-full aspect-square">
-                    {currentDiagram ? (
-                      <PolygonChart stats={propertiesToStats(currentDiagram)} />
-                    ) : (
-                      <span className="absolute inset-0 flex items-center justify-center text-slate-400">
-                        No diagram selected
-                      </span>
-                    )}
-                  </div>
-                  <Button
-                    variant="outline"
-                    className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full p-2"
-                    onClick={handlePrevDiagram}
-                    disabled={currentDiagramIndex <= 0}
-                  >
-                    <ChevronLeft className="w-6 h-6" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full p-2"
-                    onClick={handleNextDiagram}
-                    disabled={currentDiagramIndex >= diagrams.length - 1}
-                  >
-                    <ChevronRight className="w-6 h-6" />
-                  </Button>
-                </div>
+      <Card className="p-6">
+        {/* Diagram content */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <div
+              className="group relative"
+              onClick={(e) => {
+                if (!isEditingName) {
+                  e.preventDefault();
+                  setIsEditingName(true);
+                  setLocalName(currentDiagram?.name || "");
+                }
+              }}
+            >
+              {isEditingName ? (
+                <input
+                  type="text"
+                  value={localName}
+                  onChange={(e) => {
+                    const newValue = e.target.value;
+                    setLocalName(newValue);
+                    debouncedNameChange(currentDiagramId, newValue);
+                  }}
+                  onBlur={() => setIsEditingName(false)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      setIsEditingName(false);
+                    }
+                  }}
+                  className={`text-2xl font-semibold bg-transparent border-b border-slate-300 outline-none w-full ${
+                    isPending ? "text-slate-400" : ""
+                  }`}
+                  autoFocus
+                />
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      {currentDiagram?.properties.map((prop, index) => (
-                        <TableHead key={index}>{prop.name}</TableHead>
-                      ))}
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {diagrams.map((diagram) => (
-                      <TableRow key={diagram.id}>
-                        <TableCell>{diagram.name}</TableCell>
-                        {diagram.properties.map((prop, index) => (
-                          <TableCell key={index}>{prop.value}</TableCell>
-                        ))}
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                <h2 className="text-2xl font-semibold cursor-pointer group-hover:text-blue-600">
+                  {currentDiagram?.name || "Untitled Diagram"}
+                </h2>
               )}
-            </Card>
-          </TabsContent>
-          <TabsContent value="list">
-            <Card className="p-6">
-              <DiagramList
-                diagrams={sortedDiagrams || diagrams}
-                currentDiagramId={currentDiagramId}
-                onDiagramSelect={onDiagramSelect}
-                onAddDiagram={onAddDiagram || (() => {})}
-              />
-            </Card>
-          </TabsContent>
-        </Tabs>
-      ) : (
-        <Card className="p-6">
-          {/* Diagram content */}
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <div
-                className="group relative"
-                onClick={(e) => {
-                  if (!isEditingName) {
-                    e.preventDefault();
-                    setIsEditingName(true);
-                    setLocalName(currentDiagram?.name || "");
-                  }
-                }}
-              >
-                {isEditingName ? (
-                  <input
-                    type="text"
-                    value={localName}
-                    onChange={(e) => {
-                      const newValue = e.target.value;
-                      setLocalName(newValue);
-                      debouncedNameChange(currentDiagramId, newValue);
-                    }}
-                    onBlur={() => setIsEditingName(false)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        setIsEditingName(false);
-                      }
-                    }}
-                    className={`text-2xl font-semibold bg-transparent border-b border-slate-300 outline-none w-full ${
-                      isPending ? "text-slate-400" : ""
-                    }`}
-                    autoFocus
-                  />
-                ) : (
-                  <h2 className="text-2xl font-semibold cursor-pointer group-hover:text-blue-600">
-                    {currentDiagram?.name || "Untitled Diagram"}
-                  </h2>
-                )}
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => onDiagramDelete?.(currentDiagramId)}
-                className="h-10 w-10"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
             </div>
-            <Button variant="outline" onClick={() => setView(view === "diagram" ? "table" : "diagram")}>
-              {view === "diagram" ? "Switch to Table" : "Switch to Diagram"}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => onDiagramDelete?.(currentDiagramId)}
+              className="h-10 w-10"
+            >
+              <Trash2 className="h-4 w-4" />
             </Button>
           </div>
+          <Button variant="outline" onClick={() => setView(view === "diagram" ? "table" : "diagram")}>
+            {view === "diagram" ? "Switch to Table" : "Switch to Diagram"}
+          </Button>
+        </div>
 
-          {view === "diagram" ? (
-            <div className="relative bg-slate-100 rounded-lg flex items-center justify-center p-4 h-[calc(100vh-12rem)]">
-              <div className="relative h-full aspect-square">
-                {currentDiagram ? (
-                  <PolygonChart stats={propertiesToStats(currentDiagram)} />
-                ) : (
-                  <span className="absolute inset-0 flex items-center justify-center text-slate-400">
-                    No diagram selected
-                  </span>
-                )}
-              </div>
-              <Button
-                variant="outline"
-                className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full p-2"
-                onClick={handlePrevDiagram}
-                disabled={currentDiagramIndex <= 0}
-              >
-                <ChevronLeft className="w-6 h-6" />
-              </Button>
-              <Button
-                variant="outline"
-                className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full p-2"
-                onClick={handleNextDiagram}
-                disabled={currentDiagramIndex >= diagrams.length - 1}
-              >
-                <ChevronRight className="w-6 h-6" />
-              </Button>
+        {view === "diagram" ? (
+          <div className="relative bg-slate-100 rounded-lg flex items-center justify-center p-8 h-[calc(100vh-12rem)]">
+            <div className="relative w-full h-full flex items-center justify-center">
+              {currentDiagram ? (
+                <PolygonChart stats={propertiesToStats(currentDiagram)} />
+              ) : (
+                <span className="absolute inset-0 flex items-center justify-center text-slate-400">
+                  No diagram selected
+                </span>
+              )}
             </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  {currentDiagram?.properties.map((prop, index) => (
-                    <TableHead key={index}>{prop.name}</TableHead>
+            <Button
+              variant="outline"
+              className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full p-2"
+              onClick={handlePrevDiagram}
+              disabled={currentDiagramIndex <= 0}
+            >
+              <ChevronLeft className="w-6 h-6" />
+            </Button>
+            <Button
+              variant="outline"
+              className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full p-2"
+              onClick={handleNextDiagram}
+              disabled={currentDiagramIndex >= diagrams.length - 1}
+            >
+              <ChevronRight className="w-6 h-6" />
+            </Button>
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                {currentDiagram?.properties.map((prop, index) => (
+                  <TableHead key={index}>{prop.name}</TableHead>
+                ))}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {diagrams.map((diagram) => (
+                <TableRow key={diagram.id}>
+                  <TableCell>{diagram.name}</TableCell>
+                  {diagram.properties.map((prop, index) => (
+                    <TableCell key={index}>{prop.value}</TableCell>
                   ))}
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {diagrams.map((diagram) => (
-                  <TableRow key={diagram.id}>
-                    <TableCell>{diagram.name}</TableCell>
-                    {diagram.properties.map((prop, index) => (
-                      <TableCell key={index}>{prop.value}</TableCell>
-                    ))}
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </Card>
-      )}
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </Card>
     </main>
   );
 }

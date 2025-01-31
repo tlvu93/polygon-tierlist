@@ -23,17 +23,17 @@ export function PolygonChart({
   }));
 
   return (
-    <div className={cn("w-full bg-slate-900/95 rounded-lg", isPreview ? "p-1" : "p-4", className)} {...props}>
+    <div className={cn("w-full h-full bg-slate-900/95 rounded-lg", isPreview ? "p-1" : "p-4", className)} {...props}>
       <div
         style={{
           width: "100%",
-          height: isPreview ? "48px" : "300px",
-          maxWidth: isPreview ? "none" : "400px",
+          height: isPreview ? "48px" : "100%",
+          maxWidth: isPreview ? "none" : "800px",
           margin: "0 auto",
         }}
       >
         <ResponsiveContainer width="100%" height="100%">
-          <RadarChart cx="50%" cy="50%" outerRadius={isPreview ? "130%" : "65%"} data={data}>
+          <RadarChart cx="50%" cy="50%" outerRadius={isPreview ? "130%" : "80%"} data={data}>
             <PolarGrid
               gridType="polygon"
               stroke="rgba(209, 213, 219, 0.2)" // Slightly more visible grid lines

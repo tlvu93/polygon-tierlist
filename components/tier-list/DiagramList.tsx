@@ -23,7 +23,7 @@ export default function DiagramList({ diagrams, currentDiagramId, onDiagramSelec
   };
 
   return (
-    <div className="h-full w-[18%] min-w-[280px] border-r bg-slate-100 overflow-auto">
+    <div className="h-full w-full border-r bg-slate-100 overflow-auto">
       <div className="h-full flex flex-col p-3">
         <div className="flex justify-between items-center mb-2">
           <h3 className="text-sm font-medium">Diagrams</h3>

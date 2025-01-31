@@ -86,13 +86,14 @@ export default function Sidebar({
   };
 
   return (
-    <aside className="w-full md:w-[350px] lg:w-[400px] bg-slate-100 border-l overflow-y-auto">
+    <aside className="w-full bg-slate-100 border-l overflow-y-auto">
+      <div className="pt-12 lg:pt-2"></div>
       <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full">
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="editor">Editor</TabsTrigger>
           <TabsTrigger value="sorting">Sorting</TabsTrigger>
           <TabsTrigger value="sharing">Sharing</TabsTrigger>
-          <TabsTrigger value="diagrams" className="hidden md:block lg:hidden">
+          <TabsTrigger value="diagrams" className="block lg:hidden">
             Diagrams
           </TabsTrigger>
         </TabsList>
@@ -348,7 +349,7 @@ export default function Sidebar({
             </div>
           </Card>
         </TabsContent>
-        <TabsContent value="diagrams" className="hidden md:block lg:hidden">
+        <TabsContent value="diagrams" className="hidden sm:block md:block lg:hidden">
           <Card className="p-3">
             <DiagramList
               diagrams={diagrams}
