@@ -26,12 +26,7 @@ export function PolygonChart({ stats, hideLabels = false, isPreview = false, cla
             strokeWidth={1}
             radialLines={true}
           />
-          <PolarRadiusAxis
-            angle={90}
-            domain={[0, 10]}
-            tickCount={2}
-            tick={{ fill: "rgb(229, 231, 235)", fontSize: 12 }} // Smaller, lighter text
-          />
+          <PolarRadiusAxis angle={90} domain={[0, 10]} tickCount={2} tick={false} />
           {!hideLabels && (
             <PolarAngleAxis
               dataKey="subject"
