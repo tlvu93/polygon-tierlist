@@ -7,6 +7,9 @@ import Sidebar from "./Sidebar";
 import DiagramList from "./DiagramList";
 import { createClient } from "@/utils/supabase/client";
 import { Diagram, DiagramProperty } from "./types";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { PanelRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface SortingConfig {
   property: number;
@@ -27,6 +30,7 @@ export default function TierListLayout({
   const [currentDiagramId, setCurrentDiagramId] = useState("");
   const [diagrams, setDiagrams] = useState<Diagram[]>([]);
   const [sortingConfigs, setSortingConfigs] = useState<SortingConfig[]>([]);
+  const [isOpen, setIsOpen] = useState(false);
   const supabase = createClient();
 
   // Load diagrams and properties
@@ -429,33 +433,86 @@ export default function TierListLayout({
   );
 
   return (
-    <div className="flex flex-col h-screen bg-white">
+    <div className="flex flex-col min-h-screen bg-white">
       <Header tierListName={tierListName} isLoggedIn={true} onTierListNameChange={handleTierListNameChange} />
-      <div className="flex flex-1 overflow-hidden">
-        <DiagramList
-          diagrams={sortedDiagrams}
-          currentDiagramId={currentDiagramId}
-          onDiagramSelect={setCurrentDiagramId}
-          onAddDiagram={handleAddDiagram}
-        />
-        <div className="w-[60%]">
-          <MainContent
-            diagrams={diagrams}
-            currentDiagramId={currentDiagramId}
-            onDiagramSelect={setCurrentDiagramId}
-            onDiagramDelete={handleDiagramDelete}
-            onDiagramNameChange={handleDiagramNameChange}
-          />
+      <div className="flex flex-col lg:flex-row flex-1 overflow-y-auto">
+        {/* Large screens: Three-column layout */}
+        <div className="hidden lg:flex flex-1">
+          {/* Left column - DiagramList (20%) */}
+          <div className="w-1/5">
+            <DiagramList
+              diagrams={sortedDiagrams}
+              currentDiagramId={currentDiagramId}
+              onDiagramSelect={setCurrentDiagramId}
+              onAddDiagram={handleAddDiagram}
+            />
+          </div>
+
+          {/* Center column - Main content (60%) */}
+          <div className="w-3/5">
+            <MainContent
+              diagrams={diagrams}
+              currentDiagramId={currentDiagramId}
+              onDiagramSelect={setCurrentDiagramId}
+              onDiagramDelete={handleDiagramDelete}
+              onDiagramNameChange={handleDiagramNameChange}
+            />
+          </div>
+
+          {/* Right column - Sidebar (20%) */}
+          <div className="w-1/5">
+            <Sidebar
+              propertyCount={propertyCount}
+              onPropertyCountChange={handlePropertyCountChange}
+              currentDiagram={currentDiagram}
+              propertyNames={propertyNames}
+              onPropertyChange={handlePropertyChange}
+              onSortingChange={setSortingConfigs}
+              diagrams={diagrams}
+              currentDiagramId={currentDiagramId}
+              onDiagramSelect={setCurrentDiagramId}
+              onAddDiagram={handleAddDiagram}
+            />
+          </div>
         </div>
-        <Sidebar
-          propertyCount={propertyCount}
-          onPropertyCountChange={handlePropertyCountChange}
-          currentDiagram={currentDiagram}
-          propertyNames={propertyNames}
-          onPropertyChange={handlePropertyChange}
-          onSortingChange={setSortingConfigs}
-          diagrams={diagrams}
-        />
+
+        {/* Mobile/tablet layout with tabs */}
+        <div className="lg:hidden flex flex-col flex-1">
+          <Sheet open={isOpen} onOpenChange={setIsOpen}>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="icon" className="fixed right-4 top-20 z-50">
+                <PanelRight className="h-4 w-4" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-[350px] sm:w-[450px] p-0">
+              <Sidebar
+                propertyCount={propertyCount}
+                onPropertyCountChange={handlePropertyCountChange}
+                currentDiagram={currentDiagram}
+                propertyNames={propertyNames}
+                onPropertyChange={handlePropertyChange}
+                onSortingChange={setSortingConfigs}
+                diagrams={diagrams}
+                currentDiagramId={currentDiagramId}
+                onDiagramSelect={setCurrentDiagramId}
+                onAddDiagram={handleAddDiagram}
+              />
+            </SheetContent>
+          </Sheet>
+
+          <div className="flex-1">
+            <MainContent
+              diagrams={diagrams}
+              currentDiagramId={currentDiagramId}
+              onDiagramSelect={setCurrentDiagramId}
+              onDiagramDelete={handleDiagramDelete}
+              onDiagramNameChange={handleDiagramNameChange}
+              showDiagramList={true}
+              sortedDiagrams={sortedDiagrams}
+              onAddDiagram={handleAddDiagram}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );

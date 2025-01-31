@@ -11,6 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { Diagram, DiagramProperty } from "./types";
 import { useToast } from "@/components/ui/use-toast";
 import html2canvas from "html2canvas";
+import DiagramList from "./DiagramList";
 
 interface SortingConfig {
   property: number;
@@ -25,6 +26,9 @@ interface SidebarProps {
   onPropertyChange: (index: number, change: Partial<DiagramProperty>) => void;
   onSortingChange: (sortingConfigs: SortingConfig[]) => void;
   diagrams: Diagram[];
+  currentDiagramId: string;
+  onDiagramSelect: (id: string) => void;
+  onAddDiagram: () => void;
 }
 
 export default function Sidebar({
@@ -35,6 +39,9 @@ export default function Sidebar({
   onPropertyChange,
   onSortingChange,
   diagrams,
+  currentDiagramId,
+  onDiagramSelect,
+  onAddDiagram,
 }: SidebarProps) {
   const { toast } = useToast();
   const [currentTab, setCurrentTab] = useState("editor");
@@ -79,12 +86,15 @@ export default function Sidebar({
   };
 
   return (
-    <aside className="w-[20%] min-w-[200px] bg-slate-100 border-l overflow-auto">
+    <aside className="w-full md:w-[350px] lg:w-[400px] bg-slate-100 border-l overflow-y-auto">
       <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="editor">Editor</TabsTrigger>
           <TabsTrigger value="sorting">Sorting</TabsTrigger>
           <TabsTrigger value="sharing">Sharing</TabsTrigger>
+          <TabsTrigger value="diagrams" className="hidden md:block lg:hidden">
+            Diagrams
+          </TabsTrigger>
         </TabsList>
         <TabsContent value="editor">
           <Card className="p-3">
@@ -336,6 +346,16 @@ export default function Sidebar({
                 Export as CSV
               </Button>
             </div>
+          </Card>
+        </TabsContent>
+        <TabsContent value="diagrams" className="hidden md:block lg:hidden">
+          <Card className="p-3">
+            <DiagramList
+              diagrams={diagrams}
+              currentDiagramId={currentDiagramId}
+              onDiagramSelect={onDiagramSelect}
+              onAddDiagram={onAddDiagram}
+            />
           </Card>
         </TabsContent>
       </Tabs>

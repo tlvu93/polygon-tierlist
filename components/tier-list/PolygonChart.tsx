@@ -23,43 +23,66 @@ export function PolygonChart({
   }));
 
   return (
-    <div className={cn("w-full aspect-square bg-slate-900/95 rounded-lg p-4", className)} {...props}>
-      <ResponsiveContainer width="100%" height="100%">
-        <RadarChart cx="50%" cy="50%" outerRadius={isPreview ? "130%" : "65%"} data={data}>
-          <PolarGrid
-            gridType="polygon"
-            stroke="rgba(209, 213, 219, 0.2)" // Slightly more visible grid lines
-            strokeWidth={1}
-            radialLines={true}
-          />
-          <PolarRadiusAxis angle={90} domain={[0, 10]} tickCount={2} tick={false} />
-          {!hideLabels && (
-            <PolarAngleAxis
-              dataKey="subject"
-              tick={{ fill: "rgb(229, 231, 235)", fontSize: 12 }} // Smaller, lighter text
+    <div className={cn("w-full bg-slate-900/95 rounded-lg", isPreview ? "p-1" : "p-4", className)} {...props}>
+      <div
+        style={{
+          width: "100%",
+          height: isPreview ? "48px" : "300px",
+          maxWidth: isPreview ? "none" : "400px",
+          margin: "0 auto",
+        }}
+      >
+        <ResponsiveContainer width="100%" height="100%">
+          <RadarChart cx="50%" cy="50%" outerRadius={isPreview ? "130%" : "65%"} data={data}>
+            <PolarGrid
+              gridType="polygon"
+              stroke="rgba(209, 213, 219, 0.2)" // Slightly more visible grid lines
+              strokeWidth={1}
+              radialLines={true}
             />
-          )}
-          <Radar
-            name="Stats"
-            dataKey="value"
-            stroke="#ea580c" // Deeper orange stroke
-            strokeWidth={isPreview ? 1 : 2}
-            fill="#ea580c" // Deeper orange fill
-            fillOpacity={0.2} // Slightly higher opacity for better visibility
-            dot={(props) => {
-              const { cx, cy } = props;
-              const size = isPreview ? 1 : 8;
-              return (
-                <g>
-                  <circle cx={cx} cy={cy} r={isPreview ? size + 1 : size + 2} fill="white" opacity={0.25} />
-                  <circle cx={cx} cy={cy} r={isPreview ? size + 0.5 : size + 1} fill="#ea580c" opacity={0.7} />
-                  <circle cx={cx} cy={cy} r={size} fill="#ea580c" />
-                </g>
-              );
-            }}
-          />
-        </RadarChart>
-      </ResponsiveContainer>
+            <PolarRadiusAxis angle={90} domain={[0, 10]} tickCount={2} tick={false} />
+            {!hideLabels && (
+              <PolarAngleAxis
+                dataKey="subject"
+                tick={{ fill: "rgb(229, 231, 235)", fontSize: 12 }} // Smaller, lighter text
+              />
+            )}
+            <Radar
+              name="Stats"
+              dataKey="value"
+              stroke="#ea580c" // Deeper orange stroke
+              strokeWidth={isPreview ? 1 : 2}
+              fill="#ea580c" // Deeper orange fill
+              fillOpacity={0.2} // Slightly higher opacity for better visibility
+              dot={(props) => {
+                const { cx, cy } = props;
+                const size = isPreview ? 1 : 8;
+                return (
+                  <g key={`dot-${cx}-${cy}-${props.index}`}>
+                    <circle
+                      key={`outer-${cx}-${cy}-${props.index}`}
+                      cx={cx}
+                      cy={cy}
+                      r={isPreview ? size + 1 : size + 2}
+                      fill="white"
+                      opacity={0.25}
+                    />
+                    <circle
+                      key={`middle-${cx}-${cy}-${props.index}`}
+                      cx={cx}
+                      cy={cy}
+                      r={isPreview ? size + 0.5 : size + 1}
+                      fill="#ea580c"
+                      opacity={0.7}
+                    />
+                    <circle key={`inner-${cx}-${cy}-${props.index}`} cx={cx} cy={cy} r={size} fill="#ea580c" />
+                  </g>
+                );
+              }}
+            />
+          </RadarChart>
+        </ResponsiveContainer>
+      </div>
     </div>
   );
 }
