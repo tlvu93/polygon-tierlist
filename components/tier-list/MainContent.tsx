@@ -60,7 +60,7 @@ export default function MainContent({
   };
 
   return (
-    <main className="flex-1 p-6 overflow-auto">
+    <main className="flex-1 p-6 overflow-auto main-content">
       <Card className="p-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">

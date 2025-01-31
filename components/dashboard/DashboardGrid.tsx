@@ -13,6 +13,7 @@ interface DashboardGridProps {
   onItemClick: (item: Item) => void;
   onItemDoubleClick: (item: Item) => void;
   onDeleteGroup: (id: string) => void;
+  onDeleteTierList: (id: string) => void;
 }
 
 export function DashboardGrid({
@@ -21,6 +22,7 @@ export function DashboardGrid({
   onItemClick,
   onItemDoubleClick,
   onDeleteGroup,
+  onDeleteTierList,
 }: DashboardGridProps) {
   if (items.length === 0) {
     return (
@@ -43,7 +45,11 @@ export function DashboardGrid({
             {"isGroup" in item ? (
               <GroupCard group={item} isSelected={selectedItem === item.id} onDelete={() => onDeleteGroup(item.id)} />
             ) : (
-              <TierListCard tierList={item} isSelected={selectedItem === item.id} />
+              <TierListCard
+                tierList={item}
+                isSelected={selectedItem === item.id}
+                onDelete={() => onDeleteTierList(item.id)}
+              />
             )}
           </SortableItem>
         ))}

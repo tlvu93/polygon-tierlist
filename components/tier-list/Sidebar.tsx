@@ -6,9 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MinusCircle, PlusCircle } from "lucide-react";
+import { MinusCircle, PlusCircle, Copy, Download } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Diagram, DiagramProperty } from "./types";
+import { useToast } from "@/components/ui/use-toast";
+import html2canvas from "html2canvas";
 
 interface SortingConfig {
   property: number;
@@ -22,6 +24,7 @@ interface SidebarProps {
   propertyNames: string[];
   onPropertyChange: (index: number, change: Partial<DiagramProperty>) => void;
   onSortingChange: (sortingConfigs: SortingConfig[]) => void;
+  diagrams: Diagram[];
 }
 
 export default function Sidebar({
@@ -31,7 +34,9 @@ export default function Sidebar({
   propertyNames,
   onPropertyChange,
   onSortingChange,
+  diagrams,
 }: SidebarProps) {
+  const { toast } = useToast();
   const [currentTab, setCurrentTab] = useState("editor");
   const [isPending, startTransition] = useTransition();
   const [sortingConfigs, setSortingConfigs] = useState<SortingConfig[]>([]);
@@ -234,13 +239,100 @@ export default function Sidebar({
           <Card className="p-3">
             <h3 className="text-lg font-semibold mb-3">Sharing & Export</h3>
             <div className="space-y-4">
-              <Button variant="outline" className="w-full">
+              <Button
+                variant="outline"
+                className="w-full flex items-center gap-2"
+                onClick={() => {
+                  const url = window.location.href;
+                  navigator.clipboard.writeText(url).then(() => {
+                    toast({
+                      title: "Link copied",
+                      description: "The URL has been copied to your clipboard",
+                    });
+                  });
+                }}
+              >
+                <Copy className="w-4 h-4" />
                 Copy Link
               </Button>
-              <Button variant="outline" className="w-full">
+              <Button
+                variant="outline"
+                className="w-full flex items-center gap-2"
+                onClick={async () => {
+                  const mainContent = document.querySelector(".main-content");
+                  if (mainContent) {
+                    try {
+                      const canvas = await html2canvas(mainContent as HTMLElement, {
+                        backgroundColor: "#ffffff",
+                      });
+                      const dataUrl = canvas.toDataURL("image/png");
+                      const link = document.createElement("a");
+                      link.download = `${currentDiagram?.name || "diagram"}.png`;
+                      link.href = dataUrl;
+                      link.click();
+                      toast({
+                        title: "Export successful",
+                        description: "The diagram has been exported as PNG",
+                      });
+                    } catch {
+                      toast({
+                        title: "Export failed",
+                        description: "Failed to export the diagram",
+                        variant: "destructive",
+                      });
+                    }
+                  }
+                }}
+              >
+                <Download className="w-4 h-4" />
                 Export as PNG
               </Button>
-              <Button variant="outline" className="w-full">
+              <Button
+                variant="outline"
+                className="w-full flex items-center gap-2"
+                onClick={() => {
+                  if (!diagrams.length) return;
+
+                  // Get all unique property names from all diagrams
+                  const allPropertyNames = new Set<string>();
+                  diagrams.forEach((diagram) => {
+                    diagram.properties.forEach((prop) => {
+                      allPropertyNames.add(prop.name);
+                    });
+                  });
+
+                  // Create headers
+                  const headers = ["Name", ...Array.from(allPropertyNames)];
+
+                  // Create rows for each diagram
+                  const rows = diagrams.map((diagram) => {
+                    const values = [diagram.name];
+                    Array.from(allPropertyNames).forEach((propName) => {
+                      const prop = diagram.properties.find((p) => p.name === propName);
+                      values.push(prop ? prop.value.toString() : "");
+                    });
+                    return values;
+                  });
+
+                  // Combine headers and rows
+                  const csvContent = [headers.join(","), ...rows.map((row) => row.join(","))].join("\n");
+
+                  // Create and trigger download
+                  const blob = new Blob([csvContent], { type: "text/csv" });
+                  const url = window.URL.createObjectURL(blob);
+                  const link = document.createElement("a");
+                  link.href = url;
+                  link.download = "polygon-tier-list.csv";
+                  link.click();
+                  window.URL.revokeObjectURL(url);
+
+                  toast({
+                    title: "Export successful",
+                    description: "The diagram has been exported as CSV",
+                  });
+                }}
+              >
+                <Download className="w-4 h-4" />
                 Export as CSV
               </Button>
             </div>

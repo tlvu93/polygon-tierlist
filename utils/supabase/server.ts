@@ -378,6 +378,22 @@ export async function updateTierListPosition(groupId: string | null, tierListId:
   }
 }
 
+export async function deleteTierList(tierListId: string) {
+  "use server";
+
+  try {
+    const supabase = await createClient();
+
+    // Delete the tier list
+    const { error } = await supabase.from("tier_lists").delete().eq("id", tierListId);
+
+    if (error) throw error;
+  } catch (error) {
+    console.error("Error deleting tier list:", error);
+    throw new Error("Failed to delete tier list");
+  }
+}
+
 export async function deleteGroup(groupId: string) {
   "use server";
 

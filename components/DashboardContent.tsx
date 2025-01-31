@@ -31,6 +31,7 @@ import {
   createGroup,
   createTierList,
   deleteGroup,
+  deleteTierList,
   getUserContent,
   updateGroupPosition,
   updateTierListPosition,
@@ -172,6 +173,17 @@ export default function DashboardContent() {
       } finally {
         setIsLoading(false);
       }
+    }
+  };
+
+  const handleDeleteTierList = async (itemId: string) => {
+    setError(null);
+    try {
+      await deleteTierList(itemId);
+      setItems((items) => items.filter((item) => item.id !== itemId));
+    } catch (error) {
+      console.error("Error deleting tier list:", error);
+      setError("Failed to delete tier list");
     }
   };
 
@@ -469,6 +481,7 @@ export default function DashboardContent() {
               onItemClick={handleItemClick}
               onItemDoubleClick={handleItemDoubleClick}
               onDeleteGroup={handleDeleteItem}
+              onDeleteTierList={handleDeleteTierList}
             />
             {/* Invisible overlay to prevent unwanted group navigation during drag */}
             {activeId && <div className="absolute inset-0 bg-transparent" />}

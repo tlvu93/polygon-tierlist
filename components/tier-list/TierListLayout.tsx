@@ -414,6 +414,7 @@ export default function TierListLayout({
           propertyNames={propertyNames}
           onPropertyChange={handlePropertyChange}
           onSortingChange={setSortingConfigs}
+          diagrams={diagrams}
         />
       </div>
     </div>

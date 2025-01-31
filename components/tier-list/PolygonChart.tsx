@@ -9,7 +9,13 @@ interface PolygonChartProps extends React.HTMLAttributes<HTMLDivElement> {
   isPreview?: boolean;
 }
 
-export function PolygonChart({ stats, hideLabels = false, isPreview = false, className, ...props }: PolygonChartProps) {
+export function PolygonChart({
+  stats,
+  hideLabels = false,
+  isPreview = false,
+  className = "polygon-chart",
+  ...props
+}: PolygonChartProps) {
   // Transform stats object into array format for Recharts
   const data = Object.entries(stats).map(([key, value]) => ({
     subject: key.toUpperCase(),
