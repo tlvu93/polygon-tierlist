@@ -16,7 +16,7 @@ export function SortableItem({ id, children, onClick, onDoubleClick }: SortableI
   const isMobile = useIsMobile();
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
     id,
-    disabled: isMobile,
+    disabled: isMobile || document.querySelector(`[data-id="${id}"]`)?.getAttribute("data-draggable") === "false",
   });
 
   const style = {
@@ -61,7 +61,7 @@ export function SortableItem({ id, children, onClick, onDoubleClick }: SortableI
   };
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="relative">
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="relative" data-id={id}>
       <div
         className="h-full cursor-pointer md:cursor-move"
         onClick={(e) => {

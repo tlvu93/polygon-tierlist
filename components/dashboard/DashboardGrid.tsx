@@ -32,8 +32,8 @@ export function DashboardGrid({
     );
   }
 
-  return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+  const renderItems = (items: Item[]) => {
+    return (
       <SortableContext items={items.map((item) => item.id)} strategy={rectSortingStrategy}>
         {items.map((item) => (
           <SortableItem
@@ -54,6 +54,8 @@ export function DashboardGrid({
           </SortableItem>
         ))}
       </SortableContext>
-    </div>
-  );
+    );
+  };
+
+  return <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">{renderItems(items)}</div>;
 }

@@ -285,29 +285,54 @@ export default function DashboardContent() {
   };
 
   const handleDragStart = (event: DragStartEvent) => {
-    setActiveId(event.active.id as string);
+    const activeId = event.active.id as string;
+    setActiveId(activeId);
+
+    // Disable group sorting if dragging a file
+    const draggedItem = items.find((item) => item.id === activeId);
+    if (draggedItem && !("isGroup" in draggedItem)) {
+      const allGroups = items.filter((item) => "isGroup" in item);
+      allGroups.forEach((group) => {
+        if ("isGroup" in group) {
+          const element = document.querySelector(`[data-id="${group.id}"]`);
+          if (element) {
+            element.setAttribute("data-draggable", "false");
+          }
+        }
+      });
+    }
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
     setActiveId(null);
+
+    // Re-enable group sorting
+    const allGroups = items.filter((item) => "isGroup" in item);
+    allGroups.forEach((group) => {
+      if ("isGroup" in group) {
+        const element = document.querySelector(`[data-id="${group.id}"]`);
+        if (element) {
+          element.removeAttribute("data-draggable");
+        }
+      }
+    });
+
     onDragEnd(event);
   };
 
   const handleDragOver = (event: DragOverEvent) => {
-    const { over } = event;
+    const { active, over } = event;
     if (!over) return;
 
-    // Check if we're dragging over a navigation area
+    // Prevent navigation into groups while dragging
     if (over.id.toString().startsWith("navigation-")) {
-      const groupId = over.id.toString().replace("navigation-", "");
-      const overItem = items.find((item) => item.id === groupId);
+      return;
+    }
 
-      if (overItem && "isGroup" in overItem && overItem.isGroup) {
-        // Only change path if we're not already in this group
-        if (!currentPath.includes(overItem.id)) {
-          setCurrentPath([overItem.id]);
-        }
-      }
+    // Prevent groups from being dragged over themselves
+    const draggedItem = items.find((item) => item.id === active.id.toString());
+    if (draggedItem && "isGroup" in draggedItem && active.id === over.id) {
+      return;
     }
   };
 
@@ -315,15 +340,47 @@ export default function DashboardContent() {
     const { active, over } = event;
     if (!over) return;
 
-    // Handle dropping into a group or reordering
-    if (over.id.toString().startsWith("droppable-")) {
-      const groupId = over.id.toString().replace("droppable-", "");
-      const targetGroup = items.find((item) => item.id === groupId);
-      const draggedItem = items.find((item) => item.id === active.id);
+    const draggedItem = items.find((item) => item.id === active.id.toString());
+    if (!draggedItem) return;
 
-      if (targetGroup && "isGroup" in targetGroup && draggedItem && !("isGroup" in draggedItem)) {
-        // Remove from current location
-        setItems((items) => items.filter((item) => item.id !== active.id));
+    // Prevent groups from being dragged over themselves
+    if ("isGroup" in draggedItem && active.id === over.id) {
+      return;
+    }
+
+    // Handle dropping into a group
+    const overId = over.id.toString();
+    if (overId.startsWith("droppable-")) {
+      const groupId = overId.replace("droppable-", "");
+      const targetGroup = items.find((item) => item.id === groupId);
+
+      // Only allow files to be dropped into groups
+      if (targetGroup && "isGroup" in targetGroup && !("isGroup" in draggedItem)) {
+        // If the item is already in a group, remove it first
+        let sourceGroupId: string | null = null;
+        items.forEach((item) => {
+          if ("isGroup" in item && item.items.some((i) => i.id === active.id)) {
+            sourceGroupId = item.id;
+          }
+        });
+
+        if (sourceGroupId) {
+          // Remove from current group
+          setItems((items) =>
+            items.map((item) => {
+              if ("isGroup" in item && item.id === sourceGroupId) {
+                return {
+                  ...item,
+                  items: item.items.filter((i) => i.id !== active.id),
+                };
+              }
+              return item;
+            })
+          );
+        } else {
+          // Remove from root level
+          setItems((items) => items.filter((item) => item.id !== active.id));
+        }
 
         // Add to new group
         setItems((items) =>
@@ -348,59 +405,96 @@ export default function DashboardContent() {
       }
     }
 
-    // Reset current path if we're not dropping into the current group
-    setCurrentPath([]);
+    // Handle moving items back to root level
+    if (!overId.startsWith("droppable-")) {
+      let sourceGroupId: string | null = null;
+      items.forEach((item) => {
+        if ("isGroup" in item && item.items.some((i) => i.id === active.id.toString())) {
+          sourceGroupId = item.id;
+        }
+      });
 
-    // Handle normal reordering
-    if (active.id !== over.id) {
-      setItems((items) => {
-        const updateItemsRecursively = (items: Item[], currentGroupId: string | null): Item[] => {
-          if (currentGroupId === null) {
-            // Root level
-            const oldIndex = items.findIndex((item) => item.id === active.id);
-            const newIndex = items.findIndex((item) => item.id === over.id);
-            const newItems = arrayMove(items, oldIndex, newIndex);
-
-            const item = newItems[newIndex];
-            if ("isGroup" in item) {
-              updateGroupPosition(item.id, newIndex).catch((error) => {
-                console.error("Error updating group position:", error);
-                setError("Failed to update position");
-              });
-            } else {
-              updateTierListPosition(null, item.id, newIndex).catch((error) => {
-                console.error("Error updating tier list position:", error);
-                setError("Failed to update position");
-              });
+      if (sourceGroupId) {
+        // Remove from group
+        setItems((items) =>
+          items.map((item) => {
+            if ("isGroup" in item && item.id === sourceGroupId) {
+              return {
+                ...item,
+                items: item.items.filter((i) => i.id !== active.id.toString()),
+              };
             }
+            return item;
+          })
+        );
 
-            return newItems;
-          } else {
-            // Inside a group
-            return items.map((item) => {
-              if ("isGroup" in item && item.id === currentGroupId) {
-                const oldIndex = item.items.findIndex((i) => i.id === active.id);
-                const newIndex = item.items.findIndex((i) => i.id === over.id);
-                if (oldIndex !== -1 && newIndex !== -1) {
-                  const newItems = arrayMove(item.items, oldIndex, newIndex);
-                  const movedItem = newItems[newIndex];
-                  if (!("isGroup" in movedItem)) {
-                    updateTierListPosition(currentGroupId, movedItem.id, newIndex).catch((error) => {
-                      console.error("Error updating tier list position:", error);
-                      setError("Failed to update position");
-                    });
-                  }
-                  return { ...item, items: newItems };
-                }
+        // Add to root level
+        setItems((items) => [...items, draggedItem]);
+
+        // Update the database
+        updateTierListPosition(null, draggedItem.id, items.length).catch((error) => {
+          console.error("Error updating tier list position:", error);
+          setError("Failed to update position");
+        });
+
+        return;
+      }
+    }
+
+    // Handle reordering
+    if (active.id !== over.id) {
+      // Check if we're inside a group
+      if (currentPath.length > 0) {
+        const currentGroup = items.find(
+          (item) => "isGroup" in item && item.id === currentPath[currentPath.length - 1]
+        ) as GroupWithItems;
+
+        if (currentGroup) {
+          setItems((items) =>
+            items.map((item) => {
+              if ("isGroup" in item && item.id === currentGroup.id) {
+                const oldIndex = item.items.findIndex((i) => i.id === active.id.toString());
+                const newIndex = item.items.findIndex((i) => i.id === over.id.toString());
+                const newItems = arrayMove(item.items, oldIndex, newIndex);
+
+                // Update database
+                updateTierListPosition(currentGroup.id, active.id.toString(), newIndex).catch((error) => {
+                  console.error("Error updating tier list position:", error);
+                  setError("Failed to update position");
+                });
+
+                return {
+                  ...item,
+                  items: newItems,
+                };
               }
               return item;
+            })
+          );
+        }
+      } else {
+        // Root level reordering
+        setItems((items) => {
+          const oldIndex = items.findIndex((item) => item.id === active.id.toString());
+          const newIndex = items.findIndex((item) => item.id === over.id.toString());
+          const newItems = arrayMove(items, oldIndex, newIndex);
+
+          const item = newItems[newIndex];
+          if ("isGroup" in item) {
+            updateGroupPosition(item.id, newIndex).catch((error) => {
+              console.error("Error updating group position:", error);
+              setError("Failed to update position");
+            });
+          } else {
+            updateTierListPosition(null, item.id, newIndex).catch((error) => {
+              console.error("Error updating tier list position:", error);
+              setError("Failed to update position");
             });
           }
-        };
 
-        const currentGroup = currentPath.length > 0 ? currentPath[currentPath.length - 1] : null;
-        return updateItemsRecursively(items, currentGroup);
-      });
+          return newItems;
+        });
+      }
     }
   };
 
@@ -420,16 +514,21 @@ export default function DashboardContent() {
   );
 
   const getCurrentItems = useCallback((): Item[] => {
-    let currentItems = items;
-    for (const groupId of currentPath) {
-      const group = currentItems.find((item) => "isGroup" in item && item.id === groupId) as GroupWithItems;
-      if (group) {
-        currentItems = group.items;
-      } else {
-        break;
-      }
+    if (currentPath.length === 0) {
+      return items;
     }
-    return currentItems;
+
+    // Find the current group
+    const currentGroup = items.find(
+      (item) => "isGroup" in item && item.id === currentPath[currentPath.length - 1]
+    ) as GroupWithItems;
+
+    if (currentGroup) {
+      // Make items in the group sortable
+      return currentGroup.items;
+    }
+
+    return [];
   }, [items, currentPath]);
 
   const navigateUp = () => {
@@ -457,6 +556,14 @@ export default function DashboardContent() {
       onDragStart={handleDragStart}
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
+      cancelDrop={(event) => {
+        const { active, over } = event;
+        if (!over || !active) return false;
+
+        const draggedItem = items.find((item) => item.id === active.id.toString());
+        if (!draggedItem) return false;
+        return "isGroup" in draggedItem && active.id === over.id;
+      }}
     >
       <div className="flex flex-col min-h-screen bg-[#FAFAFA]">
         <Header isLoggedIn={true} />

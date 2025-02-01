@@ -13,17 +13,10 @@ interface GroupCardProps {
 }
 
 export function GroupCard({ group, isSelected, onDelete }: GroupCardProps) {
-  const { setNodeRef: setDroppableRef, isOver: isOverDroppable } = useDroppable({
+  const { setNodeRef: setDroppableRef, isOver } = useDroppable({
     id: `droppable-${group.id}`,
     data: { type: "group", id: group.id },
   });
-
-  const { setNodeRef: setNavigationRef, isOver: isOverNavigation } = useDroppable({
-    id: `navigation-${group.id}`,
-    data: { type: "navigation", id: group.id },
-  });
-
-  const isOver = isOverDroppable || isOverNavigation;
 
   return (
     <Card
@@ -33,7 +26,7 @@ export function GroupCard({ group, isSelected, onDelete }: GroupCardProps) {
         isSelected ? "border-blue-500 shadow-blue-200" : "border-transparent hover:border-gray-200"
       } ${isOver ? "bg-blue-50 border-blue-200" : ""}`}
     >
-      <CardContent ref={setNavigationRef} className="p-3 flex items-center justify-between">
+      <CardContent className="p-3 flex items-center justify-between">
         <div className="flex items-center">
           <Folder className="w-6 h-6 mr-2 text-blue-500" />
           <h3 className="font-semibold text-lg">{group.name}</h3>

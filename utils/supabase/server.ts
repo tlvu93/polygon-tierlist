@@ -23,7 +23,7 @@ export async function createClient() {
       cookies: {
         get(name: string) {
           const cookie = cookieStore.get(name);
-          console.log(`Getting cookie: ${name}`, cookie ? "found" : "not found");
+          // console.log(`Getting cookie: ${name}`, cookie ? "found" : "not found");
           return cookie?.value;
         },
         set(name: string, value: string, options: CookieOptions) {
