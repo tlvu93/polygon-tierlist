@@ -13,34 +13,50 @@ interface SortableItemProps {
 }
 
 export function SortableItem({ id, children, onClick, onDoubleClick }: SortableItemProps) {
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
+  const isMobile = useIsMobile();
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
+    id,
+    disabled: isMobile,
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
   };
 
-  const isMobile = useIsMobile();
   const lastTap = useRef<number>(0);
   const DOUBLE_TAP_DELAY = 300;
+  const isScrolling = useRef(false);
 
-  const handleTouch = (e: React.TouchEvent) => {
-    e.preventDefault();
+  const handleTouchStart = () => {
+    isScrolling.current = false;
+  };
+
+  const handleTouchMove = () => {
+    if (!isScrolling.current) {
+      isScrolling.current = true;
+    }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
     e.stopPropagation();
+
+    // If we were scrolling, reset state and don't handle tap
+    if (isScrolling.current) {
+      isScrolling.current = false;
+      return;
+    }
 
     const currentTime = new Date().getTime();
     const tapLength = currentTime - lastTap.current;
 
     if (tapLength < DOUBLE_TAP_DELAY && tapLength > 0) {
-      onDoubleClick();
       lastTap.current = 0;
+      onDoubleClick();
     } else {
       lastTap.current = currentTime;
-      setTimeout(() => {
-        if (lastTap.current === currentTime) {
-          onClick();
-        }
-      }, DOUBLE_TAP_DELAY);
+      // Remove setTimeout to make taps more responsive
+      onClick();
     }
   };
 
@@ -60,7 +76,9 @@ export function SortableItem({ id, children, onClick, onDoubleClick }: SortableI
             onDoubleClick();
           }
         }}
-        onTouchEnd={handleTouch}
+        onTouchStart={isMobile ? handleTouchStart : undefined}
+        onTouchMove={isMobile ? handleTouchMove : undefined}
+        onTouchEnd={isMobile ? handleTouchEnd : undefined}
       >
         <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-gray-100 opacity-0 group-hover:opacity-100 flex items-center justify-center pointer-events-none">
           ⋮
