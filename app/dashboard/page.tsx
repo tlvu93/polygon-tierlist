@@ -1,6 +1,6 @@
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
-import DashboardContent from "@/components/DashboardContent";
+import DashboardContent from "@/components/dashboard/DashboardContent";
 
 export const dynamic = "force-dynamic";
 

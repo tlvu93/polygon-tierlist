@@ -349,7 +349,7 @@ export default function Sidebar({
             </div>
           </Card>
         </TabsContent>
-        <TabsContent value="diagrams" className="hidden sm:block md:block lg:hidden">
+        <TabsContent value="diagrams" className="block lg:hidden">
           <Card className="p-3">
             <DiagramList
               diagrams={diagrams}

@@ -64,8 +64,8 @@ export default function MainContent({
   };
 
   return (
-    <main className="flex-1 p-6 overflow-auto main-content">
-      <Card className="p-6">
+    <main className="flex-1 p-2 sm:p-6 overflow-auto main-content">
+      <Card className="p-2 sm:p-6">
         {/* Diagram content */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
@@ -120,7 +120,7 @@ export default function MainContent({
         </div>
 
         {view === "diagram" ? (
-          <div className="relative bg-slate-100 rounded-lg flex items-center justify-center p-8 h-[calc(100vh-12rem)]">
+          <div className="relative bg-slate-100 rounded-lg flex items-center justify-center p-2 sm:p-8 h-[calc(100vh-11rem)] sm:h-[calc(100vh-12rem)]">
             <div className="relative w-full h-full flex items-center justify-center">
               {currentDiagram ? (
                 <PolygonChart stats={propertiesToStats(currentDiagram)} />
@@ -132,7 +132,7 @@ export default function MainContent({
             </div>
             <Button
               variant="outline"
-              className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full p-2"
+              className="absolute left-1 sm:left-4 top-1/2 -translate-y-1/2 rounded-full p-1 sm:p-2"
               onClick={handlePrevDiagram}
               disabled={currentDiagramIndex <= 0}
             >
@@ -140,7 +140,7 @@ export default function MainContent({
             </Button>
             <Button
               variant="outline"
-              className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full p-2"
+              className="absolute right-1 sm:right-4 top-1/2 -translate-y-1/2 rounded-full p-1 sm:p-2"
               onClick={handleNextDiagram}
               disabled={currentDiagramIndex >= diagrams.length - 1}
             >

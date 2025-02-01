@@ -480,11 +480,11 @@ export default function TierListLayout({
         <div className="lg:hidden flex flex-col flex-1">
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
             <SheetTrigger asChild>
-              <Button variant="outline" size="icon" className="fixed right-4 top-20 z-50">
+              <Button variant="outline" size="icon" className="fixed right-1 top-16 z-50">
                 <PanelRight className="h-4 w-4" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-[350px] sm:w-[450px] p-0">
+            <SheetContent side="right" className="w-[280px] sm:w-[450px] p-0">
               <Sidebar
                 propertyCount={propertyCount}
                 onPropertyCountChange={handlePropertyCountChange}

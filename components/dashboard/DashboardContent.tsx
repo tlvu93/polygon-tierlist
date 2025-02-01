@@ -20,13 +20,13 @@ import {
 import type { DropAnimation } from "@dnd-kit/core";
 import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import Header from "@/app/components/Header";
-import { DashboardHeader } from "./dashboard/DashboardHeader";
-import { DashboardGrid } from "./dashboard/DashboardGrid";
-import { CreateGroupDialog } from "./dashboard/CreateGroupDialog";
-import { CreateTierListDialog } from "./dashboard/CreateTierListDialog";
-import { Item, GroupWithItems, TierListWithStats } from "./dashboard/types";
-import { GroupCard } from "./dashboard/GroupCard";
-import { TierListCard } from "./dashboard/TierListCard";
+import { DashboardHeader } from "./DashboardHeader";
+import { DashboardGrid } from "./DashboardGrid";
+import { CreateGroupDialog } from "./CreateGroupDialog";
+import { CreateTierListDialog } from "./CreateTierListDialog";
+import { Item, GroupWithItems, TierListWithStats } from "./types";
+import { GroupCard } from "./GroupCard";
+import { TierListCard } from "./TierListCard";
 import {
   createGroup,
   createTierList,
