@@ -2,6 +2,23 @@
 
 import { cn } from "@/lib/utils";
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from "recharts";
+import { useEffect, useState } from "react";
+
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.matchMedia("(max-width: 640px)").matches);
+    };
+
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
+  return isMobile;
+}
 
 interface PolygonChartProps extends React.HTMLAttributes<HTMLDivElement> {
   stats: { [key: string]: number };
@@ -16,6 +33,7 @@ export function PolygonChart({
   className = "polygon-chart",
   ...props
 }: PolygonChartProps) {
+  const isMobile = useIsMobile();
   // Transform stats object into array format for Recharts
   const data = Object.entries(stats).map(([key, value]) => ({
     subject: key.toUpperCase(),
@@ -23,7 +41,10 @@ export function PolygonChart({
   }));
 
   return (
-    <div className={cn("w-full h-full bg-slate-900/95 rounded-lg", isPreview ? "p-1" : "p-4", className)} {...props}>
+    <div
+      className={cn("w-full h-full bg-slate-900/95 rounded-lg", isPreview ? "p-1" : "p-2 sm:p-4", className)}
+      {...props}
+    >
       <div
         style={{
           width: "100%",
@@ -44,7 +65,7 @@ export function PolygonChart({
             {!hideLabels && (
               <PolarAngleAxis
                 dataKey="subject"
-                tick={{ fill: "rgb(229, 231, 235)", fontSize: 12 }} // Smaller, lighter text
+                tick={{ fill: "rgb(229, 231, 235)", fontSize: isPreview ? 12 : isMobile ? 10 : 12 }} // Responsive text size
               />
             )}
             <Radar
@@ -56,7 +77,7 @@ export function PolygonChart({
               fillOpacity={0.2} // Slightly higher opacity for better visibility
               dot={(props) => {
                 const { cx, cy } = props;
-                const size = isPreview ? 1 : 8;
+                const size = isPreview ? 1 : isMobile ? 6 : 8;
                 return (
                   <g key={`dot-${cx}-${cy}-${props.index}`}>
                     <circle
