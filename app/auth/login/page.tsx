@@ -5,9 +5,9 @@ import { redirect } from "next/navigation";
 export const dynamic = "force-dynamic";
 
 type Props = {
-  searchParams: Promise<{
+  searchParams: {
     message?: string;
-  }>;
+  };
 };
 
 export default async function LoginPage({ searchParams }: Props) {
@@ -16,7 +16,7 @@ export default async function LoginPage({ searchParams }: Props) {
     data: { session },
   } = await supabase.auth.getSession();
 
-  const { message } = await searchParams;
+  const { message } = searchParams;
 
   if (session) {
     redirect("/dashboard");
