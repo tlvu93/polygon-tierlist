@@ -34,8 +34,7 @@ export function PolygonChart({
   ...props
 }: PolygonChartProps) {
   const isMobile = useIsMobile();
-  // Transform stats object into array format for Recharts
-  // Transform stats object into array format for Recharts with shortened labels
+  // Transform stats object into Recharts data with shortened labels.
   const data = Object.entries(stats).map(([key, value], index) => {
     const shortLabel = `P${index + 1}`;
     return {
