@@ -15,7 +15,7 @@ export default function LandingPage() {
               "Analytical Thinking": 9,
               Resilience: 8,
               Creativity: 7,
-              Craftmanship: 7,
+              Craftsmanship: 7,
               "Social Intelligence": 5,
             }}
           />
