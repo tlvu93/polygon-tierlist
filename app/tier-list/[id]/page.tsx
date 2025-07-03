@@ -1,8 +1,7 @@
 import TierListLayout from "@/components/tier-list/TierListLayout";
 import { createClient } from "@/utils/supabase/server";
 
-export default async function TierListPage(props: { params: Promise<{ id: string }> }) {
-  const params = await props.params;
+export default async function TierListPage({ params }: { params: { id: string } }) {
   const supabase = await createClient();
 
   const { data: tierList, error } = await supabase.from("tier_lists").select("title").eq("id", params.id).single();
