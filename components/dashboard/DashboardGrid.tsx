@@ -1,17 +1,17 @@
 "use client";
 
 import { SortableContext, rectSortingStrategy } from "@dnd-kit/sortable";
-import { Item } from "@/components/dashboard/types";
 import { SortableItem } from "@/components/dashboard/SortableItem";
 import { GroupCard } from "@/components/dashboard/GroupCard";
 import { TierListCard } from "@/components/dashboard/TierListCard";
+import { LocalItem, LocalGroup, LocalTierList } from "@/utils/localStorage";
 import React from "react";
 
 interface DashboardGridProps {
-  items: Item[];
+  items: LocalItem[];
   selectedItem: string | null;
-  onItemClick: (item: Item) => void;
-  onItemDoubleClick: (item: Item) => void;
+  onItemClick: (item: LocalItem) => void;
+  onItemDoubleClick: (item: LocalItem) => void;
   onDeleteGroup: (id: string) => void;
   onDeleteTierList: (id: string) => void;
 }
@@ -27,14 +27,19 @@ export function DashboardGrid({
   if (items.length === 0) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-500 text-lg">No items found. Start by creating a new Tier List or Group!</p>
+        <p className="text-gray-500 text-lg">
+          No items found. Start by creating a new Tier List or Group!
+        </p>
       </div>
     );
   }
 
-  const renderItems = (items: Item[]) => {
+  const renderItems = (items: LocalItem[]) => {
     return (
-      <SortableContext items={items.map((item) => item.id)} strategy={rectSortingStrategy}>
+      <SortableContext
+        items={items.map((item) => item.id)}
+        strategy={rectSortingStrategy}
+      >
         {items.map((item) => (
           <SortableItem
             key={item.id}
@@ -43,10 +48,14 @@ export function DashboardGrid({
             onDoubleClick={() => onItemDoubleClick(item)}
           >
             {"isGroup" in item ? (
-              <GroupCard group={item} isSelected={selectedItem === item.id} onDelete={() => onDeleteGroup(item.id)} />
+              <GroupCard
+                group={item as LocalGroup}
+                isSelected={selectedItem === item.id}
+                onDelete={() => onDeleteGroup(item.id)}
+              />
             ) : (
               <TierListCard
-                tierList={item}
+                tierList={item as LocalTierList}
                 isSelected={selectedItem === item.id}
                 onDelete={() => onDeleteTierList(item.id)}
               />
@@ -57,5 +66,9 @@ export function DashboardGrid({
     );
   };
 
-  return <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">{renderItems(items)}</div>;
+  return (
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      {renderItems(items)}
+    </div>
+  );
 }

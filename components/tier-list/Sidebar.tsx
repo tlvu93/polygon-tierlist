@@ -51,28 +51,42 @@ export default function Sidebar({
     currentDiagram?.properties.map((p) => p.name) || propertyNames
   );
   const [localPropertyValues, setLocalPropertyValues] = useState<number[]>(
-    Array.from({ length: propertyCount }, (_, i) => currentDiagram?.properties[i]?.value ?? 5)
+    Array.from(
+      { length: propertyCount },
+      (_, i) => currentDiagram?.properties[i]?.value ?? 5
+    )
   );
 
   // Update local state when current diagram changes
   useEffect(() => {
     if (currentDiagram) {
       setLocalPropertyNames(currentDiagram.properties.map((p) => p.name));
-      setLocalPropertyValues(Array.from({ length: propertyCount }, (_, i) => currentDiagram.properties[i]?.value ?? 5));
+      setLocalPropertyValues(
+        Array.from(
+          { length: propertyCount },
+          (_, i) => currentDiagram.properties[i]?.value ?? 5
+        )
+      );
     }
   }, [currentDiagram, propertyCount]);
 
-  const debouncedPropertyNameChange = useDebounce((index: number, name: string) => {
-    startTransition(() => {
-      onPropertyChange(index, { name });
-    });
-  }, 1000);
+  const debouncedPropertyNameChange = useDebounce(
+    (index: number, name: string) => {
+      startTransition(() => {
+        onPropertyChange(index, { name });
+      });
+    },
+    1000
+  );
 
-  const debouncedPropertyValueChange = useDebounce((index: number, value: number) => {
-    startTransition(() => {
-      onPropertyChange(index, { value });
-    });
-  }, 150);
+  const debouncedPropertyValueChange = useDebounce(
+    (index: number, value: number) => {
+      startTransition(() => {
+        onPropertyChange(index, { value });
+      });
+    },
+    150
+  );
 
   const debouncedSortingChange = useDebounce((configs: SortingConfig[]) => {
     startTransition(() => {
@@ -89,7 +103,7 @@ export default function Sidebar({
     <aside className="w-full bg-slate-100 border-l overflow-y-auto">
       <div className="pt-12 lg:pt-2"></div>
       <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-4 lg:grid-cols-3">
           <TabsTrigger value="editor">Editor</TabsTrigger>
           <TabsTrigger value="sorting">Sorting</TabsTrigger>
           <TabsTrigger value="sharing">Sharing</TabsTrigger>
@@ -102,7 +116,9 @@ export default function Sidebar({
             <div className="space-y-6">
               {/* General Settings Section */}
               <div>
-                <h3 className="text-sm font-medium text-slate-500 mb-3">General Settings</h3>
+                <h3 className="text-sm font-medium text-slate-500 mb-3">
+                  General Settings
+                </h3>
                 <div className="space-y-3">
                   <div>
                     <label className="text-sm mb-1 block">Properties</label>
@@ -115,7 +131,9 @@ export default function Sidebar({
                       >
                         <MinusCircle className="w-4 h-4" />
                       </Button>
-                      <span className="min-w-[4rem] text-center">{propertyCount} props</span>
+                      <span className="min-w-[4rem] text-center">
+                        {propertyCount} props
+                      </span>
                       <Button
                         variant="outline"
                         size="icon"
@@ -133,7 +151,9 @@ export default function Sidebar({
 
               {/* Properties Section */}
               <div>
-                <h3 className="text-sm font-medium text-slate-500 mb-3">Properties</h3>
+                <h3 className="text-sm font-medium text-slate-500 mb-3">
+                  Properties
+                </h3>
                 <div className="space-y-4">
                   {Array.from({ length: propertyCount }, (_, i) => (
                     <div key={i}>
@@ -179,13 +199,17 @@ export default function Sidebar({
         </TabsContent>
         <TabsContent value="sorting">
           <Card className="p-3">
-            <h3 className="text-lg font-semibold mb-3">Sorting Configuration</h3>
+            <h3 className="text-lg font-semibold mb-3">
+              Sorting Configuration
+            </h3>
             <div className="space-y-4">
               {sortingConfigs.map((config, index) => (
                 <div key={index} className="space-y-2">
                   <div className="flex justify-between items-center">
                     <select
-                      className={`w-2/3 p-2 border rounded-md ${isPending ? "text-slate-400" : ""}`}
+                      className={`w-2/3 p-2 border rounded-md ${
+                        isPending ? "text-slate-400" : ""
+                      }`}
                       value={config.property}
                       onChange={(e) => {
                         const newConfigs = [...sortingConfigs];
@@ -196,7 +220,8 @@ export default function Sidebar({
                     >
                       {Array.from({ length: propertyCount }, (_, i) => (
                         <option key={i} value={i}>
-                          {currentDiagram?.properties[i]?.name || propertyNames[i]}
+                          {currentDiagram?.properties[i]?.name ||
+                            propertyNames[i]}
                         </option>
                       ))}
                     </select>
@@ -204,7 +229,9 @@ export default function Sidebar({
                       variant="ghost"
                       size="sm"
                       onClick={() => {
-                        const newConfigs = sortingConfigs.filter((_, i) => i !== index);
+                        const newConfigs = sortingConfigs.filter(
+                          (_, i) => i !== index
+                        );
                         setSortingConfigs(newConfigs);
                         debouncedSortingChange(newConfigs);
                       }}
@@ -213,7 +240,9 @@ export default function Sidebar({
                     </Button>
                   </div>
                   <div className="space-y-1">
-                    <label className="text-sm text-slate-500">Weight: {config.weight.toFixed(1)}</label>
+                    <label className="text-sm text-slate-500">
+                      Weight: {config.weight.toFixed(1)}
+                    </label>
                     <Slider
                       value={[config.weight]}
                       onValueChange={([value]) => {
@@ -235,7 +264,10 @@ export default function Sidebar({
                 variant="outline"
                 className="w-full"
                 onClick={() => {
-                  const newConfigs = [...sortingConfigs, { property: 0, weight: 1 }];
+                  const newConfigs = [
+                    ...sortingConfigs,
+                    { property: 0, weight: 1 },
+                  ];
                   setSortingConfigs(newConfigs);
                   debouncedSortingChange(newConfigs);
                 }}
@@ -273,12 +305,17 @@ export default function Sidebar({
                   const mainContent = document.querySelector(".main-content");
                   if (mainContent) {
                     try {
-                      const canvas = await html2canvas(mainContent as HTMLElement, {
-                        backgroundColor: "#ffffff",
-                      });
+                      const canvas = await html2canvas(
+                        mainContent as HTMLElement,
+                        {
+                          backgroundColor: "#ffffff",
+                        }
+                      );
                       const dataUrl = canvas.toDataURL("image/png");
                       const link = document.createElement("a");
-                      link.download = `${currentDiagram?.name || "diagram"}.png`;
+                      link.download = `${
+                        currentDiagram?.name || "diagram"
+                      }.png`;
                       link.href = dataUrl;
                       link.click();
                       toast({
@@ -319,14 +356,19 @@ export default function Sidebar({
                   const rows = diagrams.map((diagram) => {
                     const values = [diagram.name];
                     Array.from(allPropertyNames).forEach((propName) => {
-                      const prop = diagram.properties.find((p) => p.name === propName);
+                      const prop = diagram.properties.find(
+                        (p) => p.name === propName
+                      );
                       values.push(prop ? prop.value.toString() : "");
                     });
                     return values;
                   });
 
                   // Combine headers and rows
-                  const csvContent = [headers.join(","), ...rows.map((row) => row.join(","))].join("\n");
+                  const csvContent = [
+                    headers.join(","),
+                    ...rows.map((row) => row.join(",")),
+                  ].join("\n");
 
                   // Create and trigger download
                   const blob = new Blob([csvContent], { type: "text/csv" });

@@ -1,50 +1,29 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
-import { createClient } from "@/utils/supabase/client";
 import { useEffect, useState } from "react";
-import { User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { ArrowLeft } from "lucide-react";
 import { usePathname } from "next/navigation";
 
 interface HeaderProps {
   tierListName?: string;
-  isLoggedIn?: boolean;
   onTierListNameChange?: (name: string) => void;
 }
 
-export default function Header({ tierListName, isLoggedIn, onTierListNameChange }: HeaderProps = {}) {
-  const [user, setUser] = useState<User | null>(null);
+export default function Header({
+  tierListName,
+  onTierListNameChange,
+}: HeaderProps = {}) {
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState(tierListName);
 
   useEffect(() => {
     setEditedName(tierListName);
   }, [tierListName]);
-  const supabase = createClient();
 
-  useEffect(() => {
-    async function getUser() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      setUser(user);
-    }
-
-    if (isLoggedIn) {
-      getUser();
-    }
-  }, [isLoggedIn, supabase.auth]);
   const pathname = usePathname();
-  const showBackArrow = isLoggedIn && pathname !== "/dashboard";
+  const showBackArrow = pathname !== "/dashboard" && pathname !== "/";
 
   return (
     <header className="flex items-center justify-between px-6 py-4 bg-white border-b">
@@ -92,39 +71,15 @@ export default function Header({ tierListName, isLoggedIn, onTierListNameChange 
             )}
           </div>
         ) : (
-          <Link href={isLoggedIn ? "/dashboard" : "/"} className="text-xl font-bold text-blue-600">
+          <Link href="/dashboard" className="text-xl font-bold text-blue-600">
             PolyTierlist
           </Link>
         )}
       </div>
       <div className="flex items-center space-x-4">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="flex items-center space-x-2">
-              <Image
-                src={user?.user_metadata?.avatar_url || "/placeholder.svg"}
-                alt="User"
-                width={32}
-                height={32}
-                className="rounded-full"
-              />
-              <span className="text-sm font-medium">{user?.user_metadata?.full_name || "User"}</span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem>Profile</DropdownMenuItem>
-            <DropdownMenuItem>Settings</DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={async () => {
-                const supabase = createClient();
-                await supabase.auth.signOut();
-                window.location.href = "/auth/login";
-              }}
-            >
-              Sign out
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <Link href="/auth/login">
+          <Button variant="outline">Sign In</Button>
+        </Link>
       </div>
     </header>
   );

@@ -1,28 +1,43 @@
-import TierListLayout from "@/components/tier-list/TierListLayout";
-import { createClient } from "@/utils/supabase/server";
+"use client";
 
-export default async function TierListPage({
+import LocalTierListLayout from "@/components/tier-list/LocalTierListLayout";
+import { localStorageAPI } from "@/utils/localStorage";
+import { useState, useEffect } from "react";
+
+export default function TierListPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const supabase = await createClient();
-  const { id } = await params;
+  const [tierListName, setTierListName] = useState<string>("");
+  const [isLoading, setIsLoading] = useState(true);
 
-  const { data: tierList, error } = await supabase
-    .from("tier_lists")
-    .select("title")
-    .eq("id", id)
-    .single();
+  useEffect(() => {
+    const loadTierList = async () => {
+      try {
+        const { id } = await params;
+        const tierLists = localStorageAPI.getTierLists();
+        const tierList = tierLists.find((tl) => tl.id === id);
 
-  if (error) {
-    console.error("Error fetching tier list:", error);
-    return <div>Error loading tier list</div>;
+        if (tierList) {
+          setTierListName(tierList.name);
+        } else {
+          setTierListName("Tier List");
+        }
+      } catch (error) {
+        console.error("Error loading tier list:", error);
+        setTierListName("Tier List");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadTierList();
+  }, [params]);
+
+  if (isLoading) {
+    return <div>Loading...</div>;
   }
 
-  if (!tierList) {
-    return <div>Tier list not found</div>;
-  }
-
-  return <TierListLayout id={id} tierListName={tierList.title} />;
+  return <LocalTierListLayout tierListName={tierListName} />;
 }
