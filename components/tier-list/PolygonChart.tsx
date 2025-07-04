@@ -31,7 +31,7 @@ interface PolygonChartProps extends React.HTMLAttributes<HTMLDivElement> {
   stats: { [key: string]: number };
   hideLabels?: boolean;
   isPreview?: boolean;
-  onPropertyChange?: (propertyIndex: number, newValue: number) => void;
+  onStatChange?: (statIndex: number, newValue: number) => void;
   isDraggable?: boolean;
 }
 
@@ -39,7 +39,7 @@ export function PolygonChart({
   stats,
   hideLabels = false,
   isPreview = false,
-  onPropertyChange,
+  onStatChange,
   isDraggable = false,
   className = "polygon-chart",
   ...props
@@ -61,7 +61,7 @@ export function PolygonChart({
   const handleMouseDown = useCallback(
     (index: number) => {
       if (!isDraggable || isPreview) return;
-      console.log("Mouse down on property:", index);
+      console.log("Mouse down on stat:", index);
       setIsDragging(true);
       setDragIndex(index);
     },
@@ -90,7 +90,7 @@ export function PolygonChart({
       const newValue = Math.round(normalizedDistance * 10 * 10) / 10; // Round to 1 decimal place
 
       console.log(
-        "Dragging property:",
+        "Dragging stat:",
         dragIndex,
         "new value:",
         newValue,
@@ -100,12 +100,12 @@ export function PolygonChart({
         maxRadius
       );
 
-      // Update the property that was initially clicked
-      if (onPropertyChange) {
-        onPropertyChange(dragIndex, newValue);
+      // Update the stat that was initially clicked
+      if (onStatChange) {
+        onStatChange(dragIndex, newValue);
       }
     },
-    [isDragging, dragIndex, isDraggable, isPreview, onPropertyChange]
+    [isDragging, dragIndex, isDraggable, isPreview, onStatChange]
   );
 
   const handleMouseUp = useCallback(() => {
@@ -128,6 +128,12 @@ export function PolygonChart({
         isDraggable && !isPreview ? "cursor-crosshair" : "",
         className
       )}
+      style={{
+        userSelect: "none",
+        WebkitUserSelect: "none",
+        MozUserSelect: "none",
+        msUserSelect: "none",
+      }}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseLeave}
@@ -230,7 +236,15 @@ export function PolygonChart({
         </div>
       </div>
       {!isPreview && !hideLabels && (
-        <div className="mt-2 grid grid-cols-3 gap-1 text-xs text-gray-300">
+        <div
+          className="mt-2 grid grid-cols-3 gap-1 text-xs text-gray-300"
+          style={{
+            userSelect: "none",
+            WebkitUserSelect: "none",
+            MozUserSelect: "none",
+            msUserSelect: "none",
+          }}
+        >
           {data.map((item, index) => (
             <div key={index} className="flex items-center gap-1">
               <span className="font-semibold">{item.subject}:</span>

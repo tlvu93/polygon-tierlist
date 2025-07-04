@@ -4,14 +4,14 @@ import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import Header from "@/app/components/Header";
 import MainContent from "./MainContent";
 import Sidebar from "./Sidebar";
-import DiagramList from "./DiagramList";
-import { Diagram } from "./types";
+import PolyListList from "./PolyListList";
+import { PolyList } from "./types";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { PanelRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface SortingConfig {
-  property: number;
+  stat: number;
   weight: number;
 }
 
@@ -25,9 +25,9 @@ export default function TierListLayout({
   id,
 }: TierListLayoutProps) {
   const [tierListName, setTierListName] = useState(initialTierListName);
-  const [propertyCount, setPropertyCount] = useState(5);
-  const [currentDiagramId, setCurrentDiagramId] = useState("");
-  const [diagrams, setDiagrams] = useState<Diagram[]>([]);
+  const [statCount, setStatCount] = useState(5);
+  const [currentPolyListId, setCurrentPolyListId] = useState("");
+  const [polyLists, setPolyLists] = useState<PolyList[]>([]);
   const [sortingConfigs, setSortingConfigs] = useState<SortingConfig[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [leftSidebarCollapsed, setLeftSidebarCollapsed] = useState(false);
@@ -40,35 +40,35 @@ export default function TierListLayout({
   const minSidebarWidth = 160;
   const maxSidebarWidth = 400;
 
-  // Load diagrams and properties from localStorage
-  const loadDiagrams = useCallback(() => {
+  // Load diagrams and stats from localStorage
+  const loadPolyLists = useCallback(() => {
     if (!id) return;
 
     try {
       const tierListData = localStorage.getItem(`tierlist-${id}`);
       if (tierListData) {
         const data = JSON.parse(tierListData);
-        setDiagrams(data.diagrams || []);
-        setCurrentDiagramId(data.currentDiagramId || "");
+        setPolyLists(data.polyLists || []);
+        setCurrentPolyListId(data.currentPolyListId || "");
         setTierListName(data.name || initialTierListName);
-        setPropertyCount(data.propertyCount || 5);
+        setStatCount(data.statCount || 5);
         setSortingConfigs(data.sortingConfigs || []);
       } else {
         // Create a default diagram if none exist
-        const defaultDiagram: Diagram = {
+        const defaultDiagram: PolyList = {
           id: `diagram-${Date.now()}`,
-          name: "Default Diagram",
+          name: "Poly List 1",
           thumbnail: "/placeholder.svg",
-          properties: Array(propertyCount)
+          stats: Array(statCount)
             .fill(null)
             .map((_, i) => ({
-              name: `Property ${i + 1}`,
+              name: `Stat ${i + 1}`,
               value: 5.0,
             })),
         };
 
-        setDiagrams([defaultDiagram]);
-        setCurrentDiagramId(defaultDiagram.id);
+        setPolyLists([defaultDiagram]);
+        setCurrentPolyListId(defaultDiagram.id);
 
         // Save to localStorage
         saveToLocalStorage([defaultDiagram], defaultDiagram.id);
@@ -76,20 +76,20 @@ export default function TierListLayout({
     } catch (error) {
       console.error("Error loading diagrams:", error);
     }
-  }, [id, propertyCount, initialTierListName]);
+  }, [id, statCount, initialTierListName]);
 
   // Save to localStorage
   const saveToLocalStorage = (
-    diagrams: Diagram[],
-    currentDiagramId: string
+    polyLists: PolyList[],
+    currentPolyListId: string
   ) => {
     if (!id) return;
 
     const tierListData = {
       name: tierListName,
-      diagrams: diagrams,
-      currentDiagramId: currentDiagramId,
-      propertyCount: propertyCount,
+      polyLists: polyLists,
+      currentPolyListId: currentPolyListId,
+      statCount: statCount,
       sortingConfigs: sortingConfigs,
       lastModified: new Date().toISOString(),
     };
@@ -97,25 +97,25 @@ export default function TierListLayout({
   };
 
   useEffect(() => {
-    loadDiagrams();
-  }, [loadDiagrams]);
+    loadPolyLists();
+  }, [loadPolyLists]);
 
   // Auto-save when data changes
   useEffect(() => {
-    if (diagrams.length > 0 && currentDiagramId) {
-      saveToLocalStorage(diagrams, currentDiagramId);
+    if (polyLists.length > 0 && currentPolyListId) {
+      saveToLocalStorage(polyLists, currentPolyListId);
     }
-  }, [diagrams, currentDiagramId, tierListName, propertyCount, sortingConfigs]);
+  }, [polyLists, currentPolyListId, tierListName, statCount, sortingConfigs]);
 
-  const currentDiagram = useMemo(
-    () => diagrams.find((d) => d.id === currentDiagramId),
-    [diagrams, currentDiagramId]
+  const currentPolyList = useMemo(
+    () => polyLists.find((d) => d.id === currentPolyListId),
+    [polyLists, currentPolyListId]
   );
 
-  const sortedDiagrams = useMemo(() => {
-    if (sortingConfigs.length === 0) return diagrams;
+  const sortedPolyLists = useMemo(() => {
+    if (sortingConfigs.length === 0) return polyLists;
 
-    return [...diagrams].sort((a, b) => {
+    return [...polyLists].sort((a, b) => {
       let scoreA = 0;
       let scoreB = 0;
       const totalWeight = sortingConfigs.reduce(
@@ -127,8 +127,8 @@ export default function TierListLayout({
       const normalizer = totalWeight === 0 ? 1 : totalWeight;
 
       sortingConfigs.forEach((config) => {
-        const propA = a.properties[config.property]?.value || 0;
-        const propB = b.properties[config.property]?.value || 0;
+        const propA = a.stats[config.stat]?.value || 0;
+        const propB = b.stats[config.stat]?.value || 0;
         const normalizedWeight = config.weight / normalizer;
 
         scoreA += propA * normalizedWeight;
@@ -137,103 +137,101 @@ export default function TierListLayout({
 
       return scoreB - scoreA; // Sort in descending order (highest score first)
     });
-  }, [diagrams, sortingConfigs]);
+  }, [polyLists, sortingConfigs]);
 
-  // Pre-compute property names for the current diagram
-  const propertyNames = useMemo(() => {
-    return Array(propertyCount)
+  // Pre-compute stat names for the current diagram
+  const statNames = useMemo(() => {
+    return Array(statCount)
       .fill(null)
-      .map(
-        (_, i) => currentDiagram?.properties[i]?.name || `Property ${i + 1}`
-      );
-  }, [propertyCount, currentDiagram]);
+      .map((_, i) => currentPolyList?.stats[i]?.name || `Stat ${i + 1}`);
+  }, [statCount, currentPolyList]);
 
-  // Handle property count changes
-  const handlePropertyCountChange = useCallback(
+  // Handle stat count changes
+  const handleStatCountChange = useCallback(
     (newCount: number) => {
       if (!id) return;
 
       try {
-        const updatedDiagrams = [...diagrams];
+        const updatedPolyLists = [...polyLists];
 
-        for (let i = 0; i < updatedDiagrams.length; i++) {
-          const diagram = updatedDiagrams[i];
-          let newProperties = [...diagram.properties];
+        for (let i = 0; i < updatedPolyLists.length; i++) {
+          const polyList = updatedPolyLists[i];
+          let newStats = [...polyList.stats];
 
-          if (newProperties.length < newCount) {
-            // Add new properties with consistent names
-            const additionalProperties = Array(newCount - newProperties.length)
+          if (newStats.length < newCount) {
+            // Add new stats with consistent names
+            const additionalStats = Array(newCount - newStats.length)
               .fill(null)
               .map((_, i) => {
-                const propertyIndex = newProperties.length + i;
-                // Look for existing property name at this index across all diagrams
-                const existingName = diagrams.find(
-                  (d) => d.properties[propertyIndex]?.name
-                )?.properties[propertyIndex].name;
+                const statIndex = newStats.length + i;
+                // Look for existing stat name at this index across all diagrams
+                const existingName = polyLists.find(
+                  (d) => d.stats[statIndex]?.name
+                )?.stats[statIndex].name;
                 return {
-                  name: existingName || `Property ${propertyIndex + 1}`,
+                  name: existingName || `Stat ${statIndex + 1}`,
                   value: 5.0,
                 };
               });
 
-            newProperties = [...newProperties, ...additionalProperties];
-          } else if (newProperties.length > newCount) {
-            // Remove excess properties
-            newProperties = newProperties.slice(0, newCount);
+            newStats = [...newStats, ...additionalStats];
+          } else if (newStats.length > newCount) {
+            // Remove excess stats
+            newStats = newStats.slice(0, newCount);
           }
 
-          updatedDiagrams[i] = { ...diagram, properties: newProperties };
+          updatedPolyLists[i] = { ...polyList, stats: newStats };
         }
 
-        setDiagrams(updatedDiagrams);
-        setPropertyCount(newCount);
+        setPolyLists(updatedPolyLists);
+        setStatCount(newCount);
       } catch (error) {
-        console.error("Error updating property count:", error);
+        console.error("Error updating stat count:", error);
       }
     },
-    [id, diagrams]
+    [id, polyLists]
   );
 
-  const handleDiagramSelect = useCallback((diagramId: string) => {
-    setCurrentDiagramId(diagramId);
+  const handlePolyListSelect = useCallback((polyListId: string) => {
+    setCurrentPolyListId(polyListId);
   }, []);
 
-  const handleDiagramUpdate = useCallback(
-    (diagramId: string, updates: Partial<Diagram>) => {
-      setDiagrams((prev) =>
-        prev.map((d) => (d.id === diagramId ? { ...d, ...updates } : d))
+  const handlePolyListUpdate = useCallback(
+    (polyListId: string, updates: Partial<PolyList>) => {
+      setPolyLists((prev) =>
+        prev.map((d) => (d.id === polyListId ? { ...d, ...updates } : d))
       );
     },
     []
   );
 
-  const handleDiagramDelete = useCallback(
-    (diagramId: string) => {
-      setDiagrams((prev) => prev.filter((d) => d.id !== diagramId));
-      if (currentDiagramId === diagramId) {
-        const remainingDiagrams = diagrams.filter((d) => d.id !== diagramId);
-        setCurrentDiagramId(remainingDiagrams[0]?.id || "");
+  const handlePolyListDelete = useCallback(
+    (polyListId: string) => {
+      setPolyLists((prev) => prev.filter((d) => d.id !== polyListId));
+      if (currentPolyListId === polyListId) {
+        const remainingPolyLists = polyLists.filter((d) => d.id !== polyListId);
+        setCurrentPolyListId(remainingPolyLists[0]?.id || "");
       }
     },
-    [currentDiagramId, diagrams]
+    [currentPolyListId, polyLists]
   );
 
-  const handleAddDiagram = useCallback(() => {
-    const newDiagram: Diagram = {
+  const handleAddPolyList = useCallback(() => {
+    const newPolyList: PolyList = {
       id: `diagram-${Date.now()}`,
-      name: `Diagram ${diagrams.length + 1}`,
+      name: `Poly List ${polyLists.length + 1}`,
       thumbnail: "/placeholder.svg",
-      properties: Array(propertyCount)
+      stats: Array(statCount)
         .fill(null)
         .map((_, i) => ({
-          name: `Property ${i + 1}`,
+          name: `Stat ${i + 1}`,
           value: 5.0,
         })),
     };
 
-    setDiagrams((prev) => [...prev, newDiagram]);
-    setCurrentDiagramId(newDiagram.id);
-  }, [diagrams.length, propertyCount]);
+    setPolyLists((prev) => [...prev, newPolyList]);
+    setCurrentPolyListId(newPolyList.id);
+  }, [polyLists.length, statCount]);
 
   // Drag logic for left sidebar
   const handleLeftDrag = (e: React.MouseEvent) => {
@@ -298,11 +296,11 @@ export default function TierListLayout({
           className="border-r bg-white flex flex-col h-full relative"
         >
           {!leftSidebarCollapsed && (
-            <DiagramList
-              diagrams={sortedDiagrams}
-              currentDiagramId={currentDiagramId}
-              onDiagramSelect={handleDiagramSelect}
-              onAddDiagram={handleAddDiagram}
+            <PolyListList
+              polyLists={sortedPolyLists}
+              currentPolyListId={currentPolyListId}
+              onPolyListSelect={handlePolyListSelect}
+              onAddPolyList={handleAddPolyList}
             />
           )}
           {/* Collapse/Expand Button */}
@@ -340,22 +338,22 @@ export default function TierListLayout({
         {/* Center Column - Main Content */}
         <div className="flex-1">
           <MainContent
-            diagrams={diagrams}
-            currentDiagramId={currentDiagramId}
-            onDiagramSelect={handleDiagramSelect}
-            onDiagramDelete={handleDiagramDelete}
-            onDiagramNameChange={(id, name) =>
-              handleDiagramUpdate(id, { name })
+            polyLists={polyLists}
+            currentPolyListId={currentPolyListId}
+            onPolyListSelect={handlePolyListSelect}
+            onPolyListDelete={handlePolyListDelete}
+            onPolyListNameChange={(id, name) =>
+              handlePolyListUpdate(id, { name })
             }
-            onPropertyChange={(propertyIndex, newValue) => {
-              if (currentDiagram) {
-                const updatedProperties = [...currentDiagram.properties];
-                updatedProperties[propertyIndex] = {
-                  ...updatedProperties[propertyIndex],
+            onStatChange={(statIndex, newValue) => {
+              if (currentPolyList) {
+                const updatedStats = [...currentPolyList.stats];
+                updatedStats[statIndex] = {
+                  ...updatedStats[statIndex],
                   value: newValue,
                 };
-                handleDiagramUpdate(currentDiagram.id, {
-                  properties: updatedProperties,
+                handlePolyListUpdate(currentPolyList.id, {
+                  stats: updatedStats,
                 });
               }
             }}
@@ -378,27 +376,27 @@ export default function TierListLayout({
         >
           {!rightSidebarCollapsed && (
             <Sidebar
-              propertyCount={propertyCount}
-              onPropertyCountChange={handlePropertyCountChange}
-              currentDiagram={currentDiagram}
-              propertyNames={propertyNames}
-              onPropertyChange={(index, change) => {
-                if (currentDiagram) {
-                  const updatedProperties = [...currentDiagram.properties];
-                  updatedProperties[index] = {
-                    ...updatedProperties[index],
+              statCount={statCount}
+              onStatCountChange={handleStatCountChange}
+              currentPolyList={currentPolyList}
+              statNames={statNames}
+              onStatChange={(index, change) => {
+                if (currentPolyList) {
+                  const updatedStats = [...currentPolyList.stats];
+                  updatedStats[index] = {
+                    ...updatedStats[index],
                     ...change,
                   };
-                  handleDiagramUpdate(currentDiagram.id, {
-                    properties: updatedProperties,
+                  handlePolyListUpdate(currentPolyList.id, {
+                    stats: updatedStats,
                   });
                 }
               }}
               onSortingChange={setSortingConfigs}
-              diagrams={sortedDiagrams}
-              currentDiagramId={currentDiagramId}
-              onDiagramSelect={handleDiagramSelect}
-              onAddDiagram={handleAddDiagram}
+              polyLists={sortedPolyLists}
+              currentPolyListId={currentPolyListId}
+              onPolyListSelect={handlePolyListSelect}
+              onAddPolyList={handleAddPolyList}
               isDraggable={isDraggable}
               onDraggableToggle={setIsDraggable}
             />
@@ -440,22 +438,22 @@ export default function TierListLayout({
       <div className="lg:hidden flex h-[calc(100vh-4rem)]">
         <div className="flex-1 flex flex-col">
           <MainContent
-            diagrams={diagrams}
-            currentDiagramId={currentDiagramId}
-            onDiagramSelect={handleDiagramSelect}
-            onDiagramDelete={handleDiagramDelete}
-            onDiagramNameChange={(id, name) =>
-              handleDiagramUpdate(id, { name })
+            polyLists={polyLists}
+            currentPolyListId={currentPolyListId}
+            onPolyListSelect={handlePolyListSelect}
+            onPolyListDelete={handlePolyListDelete}
+            onPolyListNameChange={(id, name) =>
+              handlePolyListUpdate(id, { name })
             }
-            onPropertyChange={(propertyIndex, newValue) => {
-              if (currentDiagram) {
-                const updatedProperties = [...currentDiagram.properties];
-                updatedProperties[propertyIndex] = {
-                  ...updatedProperties[propertyIndex],
+            onStatChange={(statIndex, newValue) => {
+              if (currentPolyList) {
+                const updatedStats = [...currentPolyList.stats];
+                updatedStats[statIndex] = {
+                  ...updatedStats[statIndex],
                   value: newValue,
                 };
-                handleDiagramUpdate(currentDiagram.id, {
-                  properties: updatedProperties,
+                handlePolyListUpdate(currentPolyList.id, {
+                  stats: updatedStats,
                 });
               }
             }}
@@ -475,27 +473,27 @@ export default function TierListLayout({
           </SheetTrigger>
           <SheetContent side="right" className="w-80">
             <Sidebar
-              propertyCount={propertyCount}
-              onPropertyCountChange={handlePropertyCountChange}
-              currentDiagram={currentDiagram}
-              propertyNames={propertyNames}
-              onPropertyChange={(index, change) => {
-                if (currentDiagram) {
-                  const updatedProperties = [...currentDiagram.properties];
-                  updatedProperties[index] = {
-                    ...updatedProperties[index],
+              statCount={statCount}
+              onStatCountChange={handleStatCountChange}
+              currentPolyList={currentPolyList}
+              statNames={statNames}
+              onStatChange={(index, change) => {
+                if (currentPolyList) {
+                  const updatedStats = [...currentPolyList.stats];
+                  updatedStats[index] = {
+                    ...updatedStats[index],
                     ...change,
                   };
-                  handleDiagramUpdate(currentDiagram.id, {
-                    properties: updatedProperties,
+                  handlePolyListUpdate(currentPolyList.id, {
+                    stats: updatedStats,
                   });
                 }
               }}
               onSortingChange={setSortingConfigs}
-              diagrams={sortedDiagrams}
-              currentDiagramId={currentDiagramId}
-              onDiagramSelect={handleDiagramSelect}
-              onAddDiagram={handleAddDiagram}
+              polyLists={sortedPolyLists}
+              currentPolyListId={currentPolyListId}
+              onPolyListSelect={handlePolyListSelect}
+              onAddPolyList={handleAddPolyList}
               isDraggable={isDraggable}
               onDraggableToggle={setIsDraggable}
             />

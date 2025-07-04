@@ -8,42 +8,42 @@ import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MinusCircle, PlusCircle, Copy, Download } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
-import { Diagram, DiagramProperty } from "./types";
+import { PolyList, Stat } from "./types";
 import { useToast } from "@/components/ui/use-toast";
 import html2canvas from "html2canvas";
-import DiagramList from "./DiagramList";
+import PolyListList from "./PolyListList";
 
 interface SortingConfig {
-  property: number;
+  stat: number;
   weight: number;
 }
 
 interface SidebarProps {
-  propertyCount: number;
-  onPropertyCountChange: (count: number) => void;
-  currentDiagram?: Diagram;
-  propertyNames: string[];
-  onPropertyChange: (index: number, change: Partial<DiagramProperty>) => void;
+  statCount: number;
+  onStatCountChange: (count: number) => void;
+  currentPolyList?: PolyList;
+  statNames: string[];
+  onStatChange: (index: number, change: Partial<Stat>) => void;
   onSortingChange: (sortingConfigs: SortingConfig[]) => void;
-  diagrams: Diagram[];
-  currentDiagramId: string;
-  onDiagramSelect: (id: string) => void;
-  onAddDiagram: () => void;
+  polyLists: PolyList[];
+  currentPolyListId: string;
+  onPolyListSelect: (id: string) => void;
+  onAddPolyList: () => void;
   isDraggable?: boolean;
   onDraggableToggle?: (enabled: boolean) => void;
 }
 
 export default function Sidebar({
-  propertyCount,
-  onPropertyCountChange,
-  currentDiagram,
-  propertyNames,
-  onPropertyChange,
+  statCount,
+  onStatCountChange,
+  currentPolyList,
+  statNames,
+  onStatChange,
   onSortingChange,
-  diagrams,
-  currentDiagramId,
-  onDiagramSelect,
-  onAddDiagram,
+  polyLists,
+  currentPolyListId,
+  onPolyListSelect,
+  onAddPolyList,
   isDraggable = false,
   onDraggableToggle,
 }: SidebarProps) {
@@ -51,42 +51,39 @@ export default function Sidebar({
   const [currentTab, setCurrentTab] = useState("editor");
   const [isPending, startTransition] = useTransition();
   const [sortingConfigs, setSortingConfigs] = useState<SortingConfig[]>([]);
-  const [localPropertyNames, setLocalPropertyNames] = useState<string[]>(
-    currentDiagram?.properties.map((p) => p.name) || propertyNames
+  const [localStatNames, setLocalStatNames] = useState<string[]>(
+    currentPolyList?.stats.map((p) => p.name) || statNames
   );
-  const [localPropertyValues, setLocalPropertyValues] = useState<number[]>(
+  const [localStatValues, setLocalStatValues] = useState<number[]>(
     Array.from(
-      { length: propertyCount },
-      (_, i) => currentDiagram?.properties[i]?.value ?? 5
+      { length: statCount },
+      (_, i) => currentPolyList?.stats[i]?.value ?? 5
     )
   );
 
-  // Update local state when current diagram changes
+  // Update local state when current polyList changes
   useEffect(() => {
-    if (currentDiagram) {
-      setLocalPropertyNames(currentDiagram.properties.map((p) => p.name));
-      setLocalPropertyValues(
+    if (currentPolyList) {
+      setLocalStatNames(currentPolyList.stats.map((p) => p.name));
+      setLocalStatValues(
         Array.from(
-          { length: propertyCount },
-          (_, i) => currentDiagram.properties[i]?.value ?? 5
+          { length: statCount },
+          (_, i) => currentPolyList.stats[i]?.value ?? 5
         )
       );
     }
-  }, [currentDiagram, propertyCount]);
+  }, [currentPolyList, statCount]);
 
-  const debouncedPropertyNameChange = useDebounce(
-    (index: number, name: string) => {
-      startTransition(() => {
-        onPropertyChange(index, { name });
-      });
-    },
-    1000
-  );
+  const debouncedStatNameChange = useDebounce((index: number, name: string) => {
+    startTransition(() => {
+      onStatChange(index, { name });
+    });
+  }, 1000);
 
-  const debouncedPropertyValueChange = useDebounce(
+  const debouncedStatValueChange = useDebounce(
     (index: number, value: number) => {
       startTransition(() => {
-        onPropertyChange(index, { value });
+        onStatChange(index, { value });
       });
     },
     150
@@ -98,9 +95,9 @@ export default function Sidebar({
     });
   }, 150);
 
-  const handlePropertyCountChange = (increment: boolean) => {
-    const newCount = increment ? propertyCount + 1 : propertyCount - 1;
-    onPropertyCountChange(Math.min(Math.max(newCount, 3), 8)); // Clamp between 3 and 8
+  const handleStatCountChange = (increment: boolean) => {
+    const newCount = increment ? statCount + 1 : statCount - 1;
+    onStatCountChange(Math.min(Math.max(newCount, 3), 8)); // Clamp between 3 and 8
   };
 
   return (
@@ -111,8 +108,8 @@ export default function Sidebar({
           <TabsTrigger value="editor">Editor</TabsTrigger>
           <TabsTrigger value="sorting">Sorting</TabsTrigger>
           <TabsTrigger value="sharing">Sharing</TabsTrigger>
-          <TabsTrigger value="diagrams" className="block lg:hidden">
-            Diagrams
+          <TabsTrigger value="polyLists" className="block lg:hidden">
+            Poly Lists
           </TabsTrigger>
         </TabsList>
         <TabsContent value="editor">
@@ -125,24 +122,24 @@ export default function Sidebar({
                 </h3>
                 <div className="space-y-3">
                   <div>
-                    <label className="text-sm mb-1 block">Properties</label>
+                    <label className="text-sm mb-1 block">Stats</label>
                     <div className="flex items-center gap-2">
                       <Button
                         variant="outline"
                         size="icon"
-                        onClick={() => handlePropertyCountChange(false)}
-                        disabled={propertyCount <= 3}
+                        onClick={() => handleStatCountChange(false)}
+                        disabled={statCount <= 3}
                       >
                         <MinusCircle className="w-4 h-4" />
                       </Button>
                       <span className="min-w-[4rem] text-center">
-                        {propertyCount} props
+                        {statCount} stats
                       </span>
                       <Button
                         variant="outline"
                         size="icon"
-                        onClick={() => handlePropertyCountChange(true)}
-                        disabled={propertyCount >= 8}
+                        onClick={() => handleStatCountChange(true)}
+                        disabled={statCount >= 8}
                       >
                         <PlusCircle className="w-4 h-4" />
                       </Button>
@@ -163,7 +160,7 @@ export default function Sidebar({
                           htmlFor="draggable-toggle"
                           className="text-sm text-gray-700"
                         >
-                          Draggable Properties
+                          Draggable Stats
                         </label>
                       </div>
                     </div>
@@ -173,26 +170,26 @@ export default function Sidebar({
 
               <Separator />
 
-              {/* Properties Section */}
+              {/* Stats Section */}
               <div>
                 <h3 className="text-sm font-medium text-slate-500 mb-3">
-                  Properties
+                  Stats
                 </h3>
                 <div className="space-y-4">
-                  {Array.from({ length: propertyCount }, (_, i) => (
+                  {Array.from({ length: statCount }, (_, i) => (
                     <div key={i}>
                       <div className="mb-1 cursor-pointer hover:bg-slate-100 transition-colors py-1 px-1">
                         <input
                           type="text"
-                          value={localPropertyNames[i]}
+                          value={localStatNames[i]}
                           onChange={(e) => {
                             const newValue = e.target.value;
-                            setLocalPropertyNames((prev) => {
+                            setLocalStatNames((prev) => {
                               const updated = [...prev];
                               updated[i] = newValue;
                               return updated;
                             });
-                            debouncedPropertyNameChange(i, newValue);
+                            debouncedStatNameChange(i, newValue);
                           }}
                           className={`w-full bg-transparent border-0 outline-none border-b border-solid border-slate-200 hover:border-slate-400 focus:border-slate-400 px-1 ${
                             isPending ? "text-slate-400" : ""
@@ -201,19 +198,19 @@ export default function Sidebar({
                       </div>
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-xs text-slate-500">
-                          Value: {localPropertyValues[i].toFixed(1)}
+                          Value: {localStatValues[i].toFixed(1)}
                         </span>
                       </div>
                       <Slider
-                        value={[localPropertyValues[i]]}
+                        value={[localStatValues[i]]}
                         onValueChange={([value]) => {
-                          setLocalPropertyValues((prev) => {
+                          setLocalStatValues((prev) => {
                             const updated = [...prev];
                             updated[i] = value;
                             return updated;
                           });
                           requestAnimationFrame(() => {
-                            debouncedPropertyValueChange(i, value);
+                            debouncedStatValueChange(i, value);
                           });
                         }}
                         max={10}
@@ -239,18 +236,17 @@ export default function Sidebar({
                       className={`w-2/3 p-2 border rounded-md ${
                         isPending ? "text-slate-400" : ""
                       }`}
-                      value={config.property}
+                      value={config.stat}
                       onChange={(e) => {
                         const newConfigs = [...sortingConfigs];
-                        newConfigs[index].property = parseInt(e.target.value);
+                        newConfigs[index].stat = parseInt(e.target.value);
                         setSortingConfigs(newConfigs);
                         debouncedSortingChange(newConfigs);
                       }}
                     >
-                      {Array.from({ length: propertyCount }, (_, i) => (
+                      {Array.from({ length: statCount }, (_, i) => (
                         <option key={i} value={i}>
-                          {currentDiagram?.properties[i]?.name ||
-                            propertyNames[i]}
+                          {currentPolyList?.stats[i]?.name || statNames[i]}
                         </option>
                       ))}
                     </select>
@@ -295,14 +291,14 @@ export default function Sidebar({
                 onClick={() => {
                   const newConfigs = [
                     ...sortingConfigs,
-                    { property: 0, weight: 1 },
+                    { stat: 0, weight: 1 },
                   ];
                   setSortingConfigs(newConfigs);
                   debouncedSortingChange(newConfigs);
                 }}
-                disabled={sortingConfigs.length >= propertyCount}
+                disabled={sortingConfigs.length >= statCount}
               >
-                Add Property
+                Add Stat
               </Button>
             </div>
           </Card>
@@ -343,18 +339,18 @@ export default function Sidebar({
                       const dataUrl = canvas.toDataURL("image/png");
                       const link = document.createElement("a");
                       link.download = `${
-                        currentDiagram?.name || "diagram"
+                        currentPolyList?.name || "polyList"
                       }.png`;
                       link.href = dataUrl;
                       link.click();
                       toast({
                         title: "Export successful",
-                        description: "The diagram has been exported as PNG",
+                        description: "The polyList has been exported as PNG",
                       });
                     } catch {
                       toast({
                         title: "Export failed",
-                        description: "Failed to export the diagram",
+                        description: "Failed to export the polyList",
                         variant: "destructive",
                       });
                     }
@@ -368,27 +364,27 @@ export default function Sidebar({
                 variant="outline"
                 className="w-full flex items-center gap-2"
                 onClick={() => {
-                  if (!diagrams.length) return;
+                  if (!polyLists.length) return;
 
-                  // Get all unique property names from all diagrams
-                  const allPropertyNames = new Set<string>();
-                  diagrams.forEach((diagram) => {
-                    diagram.properties.forEach((prop) => {
-                      allPropertyNames.add(prop.name);
+                  // Get all unique stat names from all polyLists
+                  const allStatNames = new Set<string>();
+                  polyLists.forEach((polyList) => {
+                    polyList.stats.forEach((stat) => {
+                      allStatNames.add(stat.name);
                     });
                   });
 
                   // Create headers
-                  const headers = ["Name", ...Array.from(allPropertyNames)];
+                  const headers = ["Name", ...Array.from(allStatNames)];
 
-                  // Create rows for each diagram
-                  const rows = diagrams.map((diagram) => {
-                    const values = [diagram.name];
-                    Array.from(allPropertyNames).forEach((propName) => {
-                      const prop = diagram.properties.find(
-                        (p) => p.name === propName
+                  // Create rows for each polyList
+                  const rows = polyLists.map((polyList) => {
+                    const values = [polyList.name];
+                    Array.from(allStatNames).forEach((statName) => {
+                      const stat = polyList.stats.find(
+                        (s) => s.name === statName
                       );
-                      values.push(prop ? prop.value.toString() : "");
+                      values.push(stat ? stat.value.toString() : "");
                     });
                     return values;
                   });
@@ -410,7 +406,7 @@ export default function Sidebar({
 
                   toast({
                     title: "Export successful",
-                    description: "The diagram has been exported as CSV",
+                    description: "The polyList has been exported as CSV",
                   });
                 }}
               >
@@ -420,13 +416,13 @@ export default function Sidebar({
             </div>
           </Card>
         </TabsContent>
-        <TabsContent value="diagrams" className="block lg:hidden">
+        <TabsContent value="polyLists" className="block lg:hidden">
           <Card className="p-3">
-            <DiagramList
-              diagrams={diagrams}
-              currentDiagramId={currentDiagramId}
-              onDiagramSelect={onDiagramSelect}
-              onAddDiagram={onAddDiagram}
+            <PolyListList
+              polyLists={polyLists}
+              currentPolyListId={currentPolyListId}
+              onPolyListSelect={onPolyListSelect}
+              onAddPolyList={onAddPolyList}
             />
           </Card>
         </TabsContent>

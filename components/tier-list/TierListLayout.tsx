@@ -4,15 +4,15 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 import Header from "@/app/components/Header";
 import MainContent from "./MainContent";
 import Sidebar from "./Sidebar";
-import DiagramList from "./DiagramList";
+import PolyListList from "./PolyListList";
 import { createClient } from "@/utils/supabase/client";
-import { Diagram, DiagramProperty } from "./types";
+import { PolyList, PolyListStat } from "./types";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { PanelRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface SortingConfig {
-  property: number;
+  stat: number;
   weight: number;
 }
 
@@ -26,110 +26,110 @@ export default function TierListLayout({
   id,
 }: TierListLayoutProps) {
   const [tierListName, setTierListName] = useState(initialTierListName);
-  const [propertyCount, setPropertyCount] = useState(5);
-  const [currentDiagramId, setCurrentDiagramId] = useState("");
-  const [diagrams, setDiagrams] = useState<Diagram[]>([]);
+  const [statCount, setStatCount] = useState(5);
+  const [currentPolyListId, setCurrentPolyListId] = useState("");
+  const [polyLists, setPolyLists] = useState<PolyList[]>([]);
   const [sortingConfigs, setSortingConfigs] = useState<SortingConfig[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const supabase = createClient();
 
-  // Load diagrams and properties
-  const loadDiagrams = useCallback(async () => {
+  // Load polyLists and stats
+  const loadPolyLists = useCallback(async () => {
     if (!id) return;
 
     try {
-      const { data: diagramsData, error: diagramsError } = await supabase
-        .from("diagrams")
+      const { data: polyListsData, error: polyListsError } = await supabase
+        .from("poly_lists")
         .select("id, name, thumbnail, position")
         .eq("tier_list_id", id)
         .order("position");
 
-      if (diagramsError) throw diagramsError;
+      if (polyListsError) throw polyListsError;
 
-      const loadedDiagrams: Diagram[] = [];
+      const loadedPolyLists: PolyList[] = [];
 
-      for (const diagram of diagramsData || []) {
-        const { data: propertiesData, error: propertiesError } = await supabase
-          .from("diagram_properties")
+      for (const polyList of polyListsData || []) {
+        const { data: statsData, error: statsError } = await supabase
+          .from("poly_list_stats")
           .select("name, value")
-          .eq("diagram_id", diagram.id)
+          .eq("poly_list_id", polyList.id)
           .order("position");
 
-        if (propertiesError) throw propertiesError;
+        if (statsError) throw statsError;
 
-        loadedDiagrams.push({
-          id: diagram.id,
-          name: diagram.name,
-          thumbnail: diagram.thumbnail,
-          properties: propertiesData || [],
+        loadedPolyLists.push({
+          id: polyList.id,
+          name: polyList.name,
+          thumbnail: polyList.thumbnail,
+          stats: statsData || [],
         });
       }
 
-      if (loadedDiagrams.length === 0) {
-        // Create a default diagram if none exist
-        const { data: newDiagram, error: diagramError } = await supabase
-          .from("diagrams")
+      if (loadedPolyLists.length === 0) {
+        // Create a default polyList if none exist
+        const { data: newPolyList, error: polyListError } = await supabase
+          .from("poly_lists")
           .insert({
             tier_list_id: id,
-            name: "Default Diagram",
+            name: "Poly List 1",
             position: 0,
           })
           .select()
           .single();
 
-        if (diagramError) throw diagramError;
+        if (polyListError) throw polyListError;
 
-        // Insert default properties for the new diagram
-        const defaultProperties = Array(propertyCount)
+        // Insert default stats for the new polyList
+        const defaultstats = Array(statCount)
           .fill(null)
           .map((_, i) => ({
-            diagram_id: newDiagram.id,
-            name: `Property ${i + 1}`,
+            poly_list_id: newPolyList.id,
+            name: `Stat ${i + 1}`,
             value: 5.0,
             position: i,
           }));
 
-        const { data: propertiesData, error: propertiesError } = await supabase
-          .from("diagram_properties")
-          .insert(defaultProperties)
+        const { data: statsData, error: statsError } = await supabase
+          .from("poly_list_stats")
+          .insert(defaultstats)
           .select();
 
-        if (propertiesError) throw propertiesError;
+        if (statsError) throw statsError;
 
-        const defaultDiagram: Diagram = {
-          id: newDiagram.id,
-          name: newDiagram.name,
-          thumbnail: newDiagram.thumbnail,
-          properties: propertiesData.map((p) => ({
+        const defaultPolyList: PolyList = {
+          id: newPolyList.id,
+          name: newPolyList.name,
+          thumbnail: newPolyList.thumbnail,
+          stats: statsData.map((p) => ({
             name: p.name,
             value: p.value,
           })),
         };
 
-        setDiagrams([defaultDiagram]);
-        setCurrentDiagramId(defaultDiagram.id);
+        setPolyLists([defaultPolyList]);
+        setCurrentPolyListId(defaultPolyList.id);
       } else {
-        setDiagrams(loadedDiagrams);
-        setCurrentDiagramId(loadedDiagrams[0].id);
+        setPolyLists(loadedPolyLists);
+        setCurrentPolyListId(loadedPolyLists[0].id);
       }
     } catch (error) {
-      console.error("Error loading diagrams:", error);
+      console.error("Error loading polyLists:", error);
     }
-  }, [id, supabase, propertyCount]);
+  }, [id, supabase, statCount]);
 
   useEffect(() => {
-    loadDiagrams();
-  }, [loadDiagrams]);
+    loadPolyLists();
+  }, [loadPolyLists]);
 
-  const currentDiagram = useMemo(
-    () => diagrams.find((d) => d.id === currentDiagramId),
-    [diagrams, currentDiagramId]
+  const currentPolyList = useMemo(
+    () => polyLists.find((d) => d.id === currentPolyListId),
+    [polyLists, currentPolyListId]
   );
 
-  const sortedDiagrams = useMemo(() => {
-    if (sortingConfigs.length === 0) return diagrams;
+  const sortedPolyLists = useMemo(() => {
+    if (sortingConfigs.length === 0) return polyLists;
 
-    return [...diagrams].sort((a, b) => {
+    return [...polyLists].sort((a, b) => {
       let scoreA = 0;
       let scoreB = 0;
       const totalWeight = sortingConfigs.reduce(
@@ -141,8 +141,8 @@ export default function TierListLayout({
       const normalizer = totalWeight === 0 ? 1 : totalWeight;
 
       sortingConfigs.forEach((config) => {
-        const propA = a.properties[config.property]?.value || 0;
-        const propB = b.properties[config.property]?.value || 0;
+        const propA = a.stats[config.stat]?.value || 0;
+        const propB = b.stats[config.stat]?.value || 0;
         const normalizedWeight = config.weight / normalizer;
 
         scoreA += propA * normalizedWeight;
@@ -151,105 +151,103 @@ export default function TierListLayout({
 
       return scoreB - scoreA; // Sort in descending order (highest score first)
     });
-  }, [diagrams, sortingConfigs]);
+  }, [polyLists, sortingConfigs]);
 
-  // Pre-compute property names for the current diagram
-  const propertyNames = useMemo(() => {
-    return Array(propertyCount)
+  // Pre-compute stat names for the current polyList
+  const statNames = useMemo(() => {
+    return Array(statCount)
       .fill(null)
-      .map(
-        (_, i) => currentDiagram?.properties[i]?.name || `Property ${i + 1}`
-      );
-  }, [propertyCount, currentDiagram]);
+      .map((_, i) => currentPolyList?.stats[i]?.name || `stat ${i + 1}`);
+  }, [statCount, currentPolyList]);
 
-  // Handle property count changes
-  const handlePropertyCountChange = useCallback(
+  // Handle stat count changes
+  const handlestatCountChange = useCallback(
     async (newCount: number) => {
       if (!id) return;
 
       try {
-        const updatedDiagrams = [...diagrams];
+        const updatedPolyLists = [...polyLists];
 
-        for (let i = 0; i < updatedDiagrams.length; i++) {
-          const diagram = updatedDiagrams[i];
-          let newProperties = [...diagram.properties];
+        for (let i = 0; i < updatedPolyLists.length; i++) {
+          const polyList = updatedPolyLists[i];
+          let newstats = [...polyList.stats];
 
-          if (newProperties.length < newCount) {
-            // Add new properties with consistent names
-            const additionalProperties = Array(newCount - newProperties.length)
+          if (newstats.length < newCount) {
+            // Add new stats with consistent names
+            const additionalstats = Array(newCount - newstats.length)
               .fill(null)
               .map((_, i) => {
-                const propertyIndex = newProperties.length + i;
-                // Look for existing property name at this index across all diagrams
-                const existingName = diagrams.find(
-                  (d) => d.properties[propertyIndex]?.name
-                )?.properties[propertyIndex].name;
+                const statIndex = newstats.length + i;
+                // Look for existing stat name at this index across all polyLists
+                const existingName = polyLists.find(
+                  (d) => d.stats[statIndex]?.name
+                )?.stats[statIndex].name;
                 return {
-                  diagram_id: diagram.id,
-                  name: existingName || `Property ${propertyIndex + 1}`,
+                  poly_list_id: polyList.id,
+                  name: existingName || `stat ${statIndex + 1}`,
                   value: 5.0,
-                  position: propertyIndex,
+                  position: statIndex,
                 };
               });
 
             const { error } = await supabase
-              .from("diagram_properties")
-              .insert(additionalProperties);
+              .from("poly_list_stats")
+              .insert(additionalstats);
             if (error) throw error;
 
-            newProperties = [
-              ...newProperties,
-              ...additionalProperties.map((p) => ({
+            newstats = [
+              ...newstats,
+              ...additionalstats.map((p) => ({
                 name: p.name,
                 value: p.value,
               })),
             ];
-          } else if (newProperties.length > newCount) {
-            // Remove excess properties
+          } else if (newstats.length > newCount) {
+            // Remove excess stats
             const { error } = await supabase
-              .from("diagram_properties")
+              .from("poly_list_stats")
               .delete()
-              .eq("diagram_id", diagram.id)
+              .eq("poly_list_id", polyList.id)
               .gte("position", newCount);
 
             if (error) throw error;
-            newProperties = newProperties.slice(0, newCount);
+            newstats = newstats.slice(0, newCount);
           }
 
-          updatedDiagrams[i] = { ...diagram, properties: newProperties };
+          updatedPolyLists[i] = { ...polyList, stats: newstats };
         }
 
-        setDiagrams(updatedDiagrams);
-        setPropertyCount(newCount);
+        setPolyLists(updatedPolyLists);
+        setStatCount(newCount);
       } catch (error) {
-        console.error("Error updating properties:", error);
+        console.error("Error updating stats:", error);
       }
     },
-    [diagrams, id, supabase]
+    [polyLists, id, supabase]
   );
 
-  const handlePropertyChange = useCallback(
-    async (index: number, change: Partial<DiagramProperty>) => {
-      if (!currentDiagram) return;
+  const handlestatChange = useCallback(
+    async (index: number, change: Partial<PolyListStat>) => {
+      if (!currentPolyList) return;
 
       try {
         if (change.name !== undefined) {
-          // If it's a name change, update all diagrams' properties at this position
-          const { data: diagrams, error: diagramsError } = await supabase
-            .from("diagrams")
+          // If it's a name change, update all polyLists' stats at this position
+          const { data: polyLists, error: polyListsError } = await supabase
+            .from("poly_lists")
             .select("id")
             .eq("tier_list_id", id);
 
-          if (diagramsError) throw diagramsError;
-          if (!diagrams || diagrams.length === 0)
-            throw new Error("No diagrams found");
+          if (polyListsError) throw polyListsError;
+          if (!polyLists || polyLists.length === 0)
+            throw new Error("No polyLists found");
 
-          // Update properties for each diagram
-          const promises = diagrams.map((d) =>
+          // Update stats for each polyList
+          const promises = polyLists.map((d) =>
             supabase
-              .from("diagram_properties")
+              .from("poly_list_stats")
               .update({ name: change.name })
-              .eq("diagram_id", d.id)
+              .eq("poly_list_id", d.id)
               .eq("position", index)
           );
 
@@ -257,22 +255,22 @@ export default function TierListLayout({
           const updateError = results.find((r) => r.error);
           if (updateError) throw updateError.error;
 
-          // Update all diagrams in local state
-          setDiagrams((prevDiagrams) =>
-            prevDiagrams.map((diagram) => ({
-              ...diagram,
-              properties: diagram.properties.map((prop, i) =>
+          // Update all polyLists in local state
+          setPolyLists((prevPolyLists) =>
+            prevPolyLists.map((polyList) => ({
+              ...polyList,
+              stats: polyList.stats.map((prop, i) =>
                 i === index ? { ...prop, name: change.name! } : prop
               ),
             }))
           );
         } else if (change.value !== undefined) {
-          // If it's a value change, only update the current diagram
-          // First, check if this property already exists
+          // If it's a value change, only update the current polyList
+          // First, check if this stat already exists
           const { data: existingProps, error: queryError } = await supabase
-            .from("diagram_properties")
+            .from("poly_list_stats")
             .select("id, name")
-            .eq("diagram_id", currentDiagram.id)
+            .eq("poly_list_id", currentPolyList.id)
             .eq("position", index)
             .single();
 
@@ -283,22 +281,21 @@ export default function TierListLayout({
 
           let error;
           if (existingProps) {
-            // Update existing property
+            // Update existing stat
             ({ error } = await supabase
-              .from("diagram_properties")
+              .from("poly_list_stats")
               .update({ value: change.value })
               .eq("id", existingProps.id));
           } else {
-            // Create new property with a unique name
-            const propertyName =
-              diagrams.find((d) => d.properties[index]?.name)?.properties[index]
-                .name ||
-              currentDiagram.properties[index]?.name ||
-              `Property ${index + 1}`;
+            // Create new stat with a unique name
+            const statName =
+              polyLists.find((d) => d.stats[index]?.name)?.stats[index].name ||
+              currentPolyList.stats[index]?.name ||
+              `stat ${index + 1}`;
 
-            ({ error } = await supabase.from("diagram_properties").insert({
-              diagram_id: currentDiagram.id,
-              name: propertyName,
+            ({ error } = await supabase.from("poly_list_stats").insert({
+              poly_list_id: currentPolyList.id,
+              name: statName,
               value: change.value,
               position: index,
             }));
@@ -306,152 +303,148 @@ export default function TierListLayout({
 
           if (error) throw error;
 
-          // Update only current diagram in local state
-          setDiagrams((prevDiagrams) => {
-            const updatedDiagram = { ...currentDiagram };
-            const newProperties = [...updatedDiagram.properties];
+          // Update only current polyList in local state
+          setPolyLists((prevPolyLists) => {
+            const updatedPolyList = { ...currentPolyList };
+            const newstats = [...updatedPolyList.stats];
 
-            if (index >= newProperties.length) {
-              // Use the same property name we used for the upsert
-              const propertyName =
-                diagrams.find((d) => d.properties[index]?.name)?.properties[
-                  index
-                ].name ||
-                currentDiagram.properties[index]?.name ||
-                `Property ${index + 1}`;
+            if (index >= newstats.length) {
+              // Use the same stat name we used for the upsert
+              const statName =
+                polyLists.find((d) => d.stats[index]?.name)?.stats[index]
+                  .name ||
+                currentPolyList.stats[index]?.name ||
+                `stat ${index + 1}`;
 
-              while (newProperties.length <= index) {
-                newProperties.push({
-                  name: propertyName,
+              while (newstats.length <= index) {
+                newstats.push({
+                  name: statName,
                   value: 5,
                 });
               }
             }
 
-            newProperties[index] = {
-              ...newProperties[index],
+            newstats[index] = {
+              ...newstats[index],
               value: change.value ?? 5, // Provide default value if undefined
             };
 
-            updatedDiagram.properties = newProperties;
+            updatedPolyList.stats = newstats;
 
-            return prevDiagrams.map((diagram) =>
-              diagram.id === currentDiagramId ? updatedDiagram : diagram
+            return prevPolyLists.map((polyList) =>
+              polyList.id === currentPolyListId ? updatedPolyList : polyList
             );
           });
         }
       } catch (error) {
-        console.error("Error updating property:", error);
+        console.error("Error updating stat:", error);
       }
     },
-    [currentDiagram, currentDiagramId, supabase, diagrams, id]
+    [currentPolyList, currentPolyListId, supabase, polyLists, id]
   );
 
-  const handleAddDiagram = useCallback(async () => {
+  const handleAddPolyList = useCallback(async () => {
     if (!id) return;
 
     try {
-      // Insert new diagram
-      const { data: newDiagram, error: diagramError } = await supabase
-        .from("diagrams")
+      // Insert new polyList
+      const { data: newPolyList, error: polyListError } = await supabase
+        .from("poly_lists")
         .insert({
           tier_list_id: id,
-          name: `New Diagram ${diagrams.length + 1}`,
-          position: diagrams.length,
+          name: `Poly List ${polyLists.length + 1}`,
+          position: polyLists.length,
         })
         .select()
         .single();
 
-      if (diagramError) throw diagramError;
+      if (polyListError) throw polyListError;
 
-      // Insert properties for the new diagram using existing names if available
-      const properties = Array(propertyCount)
+      // Insert stats for the new polyList using existing names if available
+      const stats = Array(statCount)
         .fill(null)
         .map((_, i) => {
-          // Look for existing property name at this index across all diagrams
-          const existingName = diagrams.find((d) => d.properties[i]?.name)
-            ?.properties[i].name;
+          // Look for existing stat name at this index across all polyLists
+          const existingName = polyLists.find((d) => d.stats[i]?.name)?.stats[i]
+            .name;
           return {
-            diagram_id: newDiagram.id,
-            name: existingName || `Property ${i + 1}`,
+            poly_list_id: newPolyList.id,
+            name: existingName || `stat ${i + 1}`,
             value: 5.0,
             position: i,
           };
         });
 
-      const { data: propertiesData, error: propertiesError } = await supabase
-        .from("diagram_properties")
-        .insert(properties)
+      const { data: statsData, error: statsError } = await supabase
+        .from("poly_list_stats")
+        .insert(stats)
         .select();
 
-      if (propertiesError) throw propertiesError;
+      if (statsError) throw statsError;
 
-      const newDiagramWithProperties: Diagram = {
-        id: newDiagram.id,
-        name: newDiagram.name,
-        thumbnail: newDiagram.thumbnail,
-        properties: propertiesData.map((p) => ({
+      const newPolyListWithstats: PolyList = {
+        id: newPolyList.id,
+        name: newPolyList.name,
+        thumbnail: newPolyList.thumbnail,
+        stats: statsData.map((p) => ({
           name: p.name,
           value: p.value,
         })),
       };
 
-      setDiagrams((prevDiagrams) => [
-        ...prevDiagrams,
-        newDiagramWithProperties,
-      ]);
-      setCurrentDiagramId(newDiagram.id);
+      setPolyLists((prevPolyLists) => [...prevPolyLists, newPolyListWithstats]);
+      setCurrentPolyListId(newPolyList.id);
     } catch (error) {
-      console.error("Error adding diagram:", error);
+      console.error("Error adding polyList:", error);
     }
-  }, [id, propertyCount, supabase, diagrams]);
+  }, [id, statCount, supabase, polyLists]);
 
-  const handleDiagramDelete = useCallback(
-    async (diagramId: string) => {
+  const handlePolyListDelete = useCallback(
+    async (polyListId: string) => {
       if (!id) return;
 
       try {
         const { error } = await supabase
-          .from("diagrams")
+          .from("poly_lists")
           .delete()
-          .eq("id", diagramId);
+          .eq("id", polyListId);
         if (error) throw error;
 
-        setDiagrams((prevDiagrams) => {
-          const filteredDiagrams = prevDiagrams.filter(
-            (d) => d.id !== diagramId
+        setPolyLists((prevPolyLists) => {
+          const filteredPolyLists = prevPolyLists.filter(
+            (d) => d.id !== polyListId
           );
-          if (currentDiagramId === diagramId) {
-            setCurrentDiagramId(
-              filteredDiagrams.length > 0 ? filteredDiagrams[0].id : ""
+          if (currentPolyListId === polyListId) {
+            setCurrentPolyListId(
+              filteredPolyLists.length > 0 ? filteredPolyLists[0].id : ""
             );
           }
-          return filteredDiagrams;
+          return filteredPolyLists;
         });
       } catch (error) {
-        console.error("Error deleting diagram:", error);
+        console.error("Error deleting polyList:", error);
       }
     },
-    [id, currentDiagramId, supabase]
+    [id, currentPolyListId, supabase]
   );
 
-  const handleDiagramNameChange = useCallback(
-    async (diagramId: string, name: string) => {
+  const handlePolyListNameChange = useCallback(
+    async (polyListId: string, name: string) => {
       if (!id) return;
 
       try {
         const { error } = await supabase
-          .from("diagrams")
+          .from("poly_lists")
           .update({ name, updated_at: new Date().toISOString() })
-          .eq("id", diagramId);
+          .eq("id", polyListId);
 
         if (error) throw error;
 
-        setDiagrams((prevDiagrams) =>
-          prevDiagrams.map((d) => (d.id === diagramId ? { ...d, name } : d))
+        setPolyLists((prevPolyLists) =>
+          prevPolyLists.map((d) => (d.id === polyListId ? { ...d, name } : d))
         );
       } catch (error) {
-        console.error("Error updating diagram name:", error);
+        console.error("Error updating polyList name:", error);
       }
     },
     [id, supabase]
@@ -485,27 +478,27 @@ export default function TierListLayout({
       <div className="flex flex-col lg:flex-row flex-1 overflow-y-auto">
         {/* Large screens: Three-column layout */}
         <div className="hidden lg:flex flex-1">
-          {/* Left column - DiagramList (20%) */}
+          {/* Left column - PolyListList (20%) */}
           <div className="h-full w-1/5">
-            <DiagramList
-              diagrams={sortedDiagrams}
-              currentDiagramId={currentDiagramId}
-              onDiagramSelect={setCurrentDiagramId}
-              onAddDiagram={handleAddDiagram}
+            <PolyListList
+              polyLists={sortedPolyLists}
+              currentPolyListId={currentPolyListId}
+              onPolyListSelect={setCurrentPolyListId}
+              onAddPolyList={handleAddPolyList}
             />
           </div>
 
           {/* Center column - Main content (60%) */}
           <div className="w-3/5">
             <MainContent
-              diagrams={diagrams}
-              currentDiagramId={currentDiagramId}
-              onDiagramSelect={setCurrentDiagramId}
-              onDiagramDelete={handleDiagramDelete}
-              onDiagramNameChange={handleDiagramNameChange}
-              onPropertyChange={(propertyIndex, newValue) => {
-                if (currentDiagram) {
-                  handlePropertyChange(propertyIndex, { value: newValue });
+              polyLists={polyLists}
+              currentPolyListId={currentPolyListId}
+              onPolyListSelect={setCurrentPolyListId}
+              onPolyListDelete={handlePolyListDelete}
+              onPolyListNameChange={handlePolyListNameChange}
+              onStatChange={(statIndex, newValue) => {
+                if (currentPolyList) {
+                  handlestatChange(statIndex, { value: newValue });
                 }
               }}
             />
@@ -514,16 +507,16 @@ export default function TierListLayout({
           {/* Right column - Sidebar (20%) */}
           <div className="w-1/5">
             <Sidebar
-              propertyCount={propertyCount}
-              onPropertyCountChange={handlePropertyCountChange}
-              currentDiagram={currentDiagram}
-              propertyNames={propertyNames}
-              onPropertyChange={handlePropertyChange}
+              statCount={statCount}
+              onStatCountChange={handlestatCountChange}
+              currentPolyList={currentPolyList}
+              statNames={statNames}
+              onStatChange={handlestatChange}
               onSortingChange={setSortingConfigs}
-              diagrams={diagrams}
-              currentDiagramId={currentDiagramId}
-              onDiagramSelect={setCurrentDiagramId}
-              onAddDiagram={handleAddDiagram}
+              polyLists={polyLists}
+              currentPolyListId={currentPolyListId}
+              onPolyListSelect={setCurrentPolyListId}
+              onAddPolyList={handleAddPolyList}
             />
           </div>
         </div>
@@ -542,35 +535,35 @@ export default function TierListLayout({
             </SheetTrigger>
             <SheetContent side="right" className="w-[280px] sm:w-[450px] p-0">
               <Sidebar
-                propertyCount={propertyCount}
-                onPropertyCountChange={handlePropertyCountChange}
-                currentDiagram={currentDiagram}
-                propertyNames={propertyNames}
-                onPropertyChange={handlePropertyChange}
+                statCount={statCount}
+                onStatCountChange={handlestatCountChange}
+                currentPolyList={currentPolyList}
+                statNames={statNames}
+                onStatChange={handlestatChange}
                 onSortingChange={setSortingConfigs}
-                diagrams={diagrams}
-                currentDiagramId={currentDiagramId}
-                onDiagramSelect={setCurrentDiagramId}
-                onAddDiagram={handleAddDiagram}
+                polyLists={polyLists}
+                currentPolyListId={currentPolyListId}
+                onPolyListSelect={setCurrentPolyListId}
+                onAddPolyList={handleAddPolyList}
               />
             </SheetContent>
           </Sheet>
 
           <div className="flex-1">
             <MainContent
-              diagrams={diagrams}
-              currentDiagramId={currentDiagramId}
-              onDiagramSelect={setCurrentDiagramId}
-              onDiagramDelete={handleDiagramDelete}
-              onDiagramNameChange={handleDiagramNameChange}
-              onPropertyChange={(propertyIndex, newValue) => {
-                if (currentDiagram) {
-                  handlePropertyChange(propertyIndex, { value: newValue });
+              polyLists={polyLists}
+              currentPolyListId={currentPolyListId}
+              onPolyListSelect={setCurrentPolyListId}
+              onPolyListDelete={handlePolyListDelete}
+              onPolyListNameChange={handlePolyListNameChange}
+              onStatChange={(statIndex, newValue) => {
+                if (currentPolyList) {
+                  handlestatChange(statIndex, { value: newValue });
                 }
               }}
-              showDiagramList={true}
-              sortedDiagrams={sortedDiagrams}
-              onAddDiagram={handleAddDiagram}
+              showPolyListList={true}
+              sortedPolyLists={sortedPolyLists}
+              onAddPolyList={handleAddPolyList}
             />
           </div>
         </div>

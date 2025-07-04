@@ -1,11 +1,16 @@
-export interface DiagramProperty {
+export interface Stat {
   name: string;
   value: number;
 }
 
-export interface Diagram {
+export interface PolyListStat {
+  name: string;
+  value: number;
+}
+
+export interface PolyList {
   id: string;
   name: string;
   thumbnail?: string;
-  properties: DiagramProperty[];
+  stats: PolyListStat[];
 }

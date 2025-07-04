@@ -70,8 +70,8 @@ create table diagrams (
   updated_at timestamp with time zone default timezone('utc'::text, now())
 );
 
--- diagram_properties
-create table diagram_properties (
+-- diagram_stats
+create table diagram_stats (
   id uuid default uuid_generate_v4() primary key,
   diagram_id uuid references diagrams on delete cascade,
   name text not null,
