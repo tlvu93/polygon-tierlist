@@ -85,7 +85,7 @@ export default function TierListLayout({
           .map((_, i) => ({
             diagram_id: newDiagram.id,
             name: `Property ${i + 1}`,
-            value: 5,
+            value: 5.0,
             position: i,
           }));
 
@@ -187,7 +187,7 @@ export default function TierListLayout({
                 return {
                   diagram_id: diagram.id,
                   name: existingName || `Property ${propertyIndex + 1}`,
-                  value: 5,
+                  value: 5.0,
                   position: propertyIndex,
                 };
               });
@@ -374,7 +374,7 @@ export default function TierListLayout({
           return {
             diagram_id: newDiagram.id,
             name: existingName || `Property ${i + 1}`,
-            value: 5,
+            value: 5.0,
             position: i,
           };
         });

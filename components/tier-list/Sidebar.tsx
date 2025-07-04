@@ -199,6 +199,11 @@ export default function Sidebar({
                           }`}
                         />
                       </div>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs text-slate-500">
+                          Value: {localPropertyValues[i].toFixed(1)}
+                        </span>
+                      </div>
                       <Slider
                         value={[localPropertyValues[i]]}
                         onValueChange={([value]) => {
@@ -212,7 +217,7 @@ export default function Sidebar({
                           });
                         }}
                         max={10}
-                        step={1}
+                        step={0.1}
                       />
                     </div>
                   ))}

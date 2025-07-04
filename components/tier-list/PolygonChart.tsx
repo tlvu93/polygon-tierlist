@@ -87,7 +87,7 @@ export function PolygonChart({
 
       // Calculate new value based on distance (0-10 scale)
       const normalizedDistance = Math.min(distance / maxRadius, 1);
-      const newValue = Math.round(normalizedDistance * 10);
+      const newValue = Math.round(normalizedDistance * 10 * 10) / 10; // Round to 1 decimal place
 
       console.log(
         "Dragging property:",

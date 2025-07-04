@@ -63,7 +63,7 @@ export default function TierListLayout({
             .fill(null)
             .map((_, i) => ({
               name: `Property ${i + 1}`,
-              value: 5,
+              value: 5.0,
             })),
         };
 
@@ -172,7 +172,7 @@ export default function TierListLayout({
                 )?.properties[propertyIndex].name;
                 return {
                   name: existingName || `Property ${propertyIndex + 1}`,
-                  value: 5,
+                  value: 5.0,
                 };
               });
 
@@ -227,7 +227,7 @@ export default function TierListLayout({
         .fill(null)
         .map((_, i) => ({
           name: `Property ${i + 1}`,
-          value: 5,
+          value: 5.0,
         })),
     };
 
