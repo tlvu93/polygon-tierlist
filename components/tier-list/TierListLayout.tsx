@@ -100,7 +100,10 @@ export default function TierListLayout({
           id: newDiagram.id,
           name: newDiagram.name,
           thumbnail: newDiagram.thumbnail,
-          properties: propertiesData.map((p) => ({ name: p.name, value: p.value })),
+          properties: propertiesData.map((p) => ({
+            name: p.name,
+            value: p.value,
+          })),
         };
 
         setDiagrams([defaultDiagram]);
@@ -118,7 +121,10 @@ export default function TierListLayout({
     loadDiagrams();
   }, [loadDiagrams]);
 
-  const currentDiagram = useMemo(() => diagrams.find((d) => d.id === currentDiagramId), [diagrams, currentDiagramId]);
+  const currentDiagram = useMemo(
+    () => diagrams.find((d) => d.id === currentDiagramId),
+    [diagrams, currentDiagramId]
+  );
 
   const sortedDiagrams = useMemo(() => {
     if (sortingConfigs.length === 0) return diagrams;
@@ -126,7 +132,10 @@ export default function TierListLayout({
     return [...diagrams].sort((a, b) => {
       let scoreA = 0;
       let scoreB = 0;
-      const totalWeight = sortingConfigs.reduce((sum, config) => sum + config.weight, 0);
+      const totalWeight = sortingConfigs.reduce(
+        (sum, config) => sum + config.weight,
+        0
+      );
 
       // Normalize weights if total is not 1
       const normalizer = totalWeight === 0 ? 1 : totalWeight;
@@ -148,7 +157,9 @@ export default function TierListLayout({
   const propertyNames = useMemo(() => {
     return Array(propertyCount)
       .fill(null)
-      .map((_, i) => currentDiagram?.properties[i]?.name || `Property ${i + 1}`);
+      .map(
+        (_, i) => currentDiagram?.properties[i]?.name || `Property ${i + 1}`
+      );
   }, [propertyCount, currentDiagram]);
 
   // Handle property count changes
@@ -170,8 +181,9 @@ export default function TierListLayout({
               .map((_, i) => {
                 const propertyIndex = newProperties.length + i;
                 // Look for existing property name at this index across all diagrams
-                const existingName = diagrams.find((d) => d.properties[propertyIndex]?.name)?.properties[propertyIndex]
-                  .name;
+                const existingName = diagrams.find(
+                  (d) => d.properties[propertyIndex]?.name
+                )?.properties[propertyIndex].name;
                 return {
                   diagram_id: diagram.id,
                   name: existingName || `Property ${propertyIndex + 1}`,
@@ -180,10 +192,18 @@ export default function TierListLayout({
                 };
               });
 
-            const { error } = await supabase.from("diagram_properties").insert(additionalProperties);
+            const { error } = await supabase
+              .from("diagram_properties")
+              .insert(additionalProperties);
             if (error) throw error;
 
-            newProperties = [...newProperties, ...additionalProperties.map((p) => ({ name: p.name, value: p.value }))];
+            newProperties = [
+              ...newProperties,
+              ...additionalProperties.map((p) => ({
+                name: p.name,
+                value: p.value,
+              })),
+            ];
           } else if (newProperties.length > newCount) {
             // Remove excess properties
             const { error } = await supabase
@@ -221,7 +241,8 @@ export default function TierListLayout({
             .eq("tier_list_id", id);
 
           if (diagramsError) throw diagramsError;
-          if (!diagrams || diagrams.length === 0) throw new Error("No diagrams found");
+          if (!diagrams || diagrams.length === 0)
+            throw new Error("No diagrams found");
 
           // Update properties for each diagram
           const promises = diagrams.map((d) =>
@@ -240,7 +261,9 @@ export default function TierListLayout({
           setDiagrams((prevDiagrams) =>
             prevDiagrams.map((diagram) => ({
               ...diagram,
-              properties: diagram.properties.map((prop, i) => (i === index ? { ...prop, name: change.name! } : prop)),
+              properties: diagram.properties.map((prop, i) =>
+                i === index ? { ...prop, name: change.name! } : prop
+              ),
             }))
           );
         } else if (change.value !== undefined) {
@@ -268,7 +291,8 @@ export default function TierListLayout({
           } else {
             // Create new property with a unique name
             const propertyName =
-              diagrams.find((d) => d.properties[index]?.name)?.properties[index].name ||
+              diagrams.find((d) => d.properties[index]?.name)?.properties[index]
+                .name ||
               currentDiagram.properties[index]?.name ||
               `Property ${index + 1}`;
 
@@ -290,7 +314,9 @@ export default function TierListLayout({
             if (index >= newProperties.length) {
               // Use the same property name we used for the upsert
               const propertyName =
-                diagrams.find((d) => d.properties[index]?.name)?.properties[index].name ||
+                diagrams.find((d) => d.properties[index]?.name)?.properties[
+                  index
+                ].name ||
                 currentDiagram.properties[index]?.name ||
                 `Property ${index + 1}`;
 
@@ -309,7 +335,9 @@ export default function TierListLayout({
 
             updatedDiagram.properties = newProperties;
 
-            return prevDiagrams.map((diagram) => (diagram.id === currentDiagramId ? updatedDiagram : diagram));
+            return prevDiagrams.map((diagram) =>
+              diagram.id === currentDiagramId ? updatedDiagram : diagram
+            );
           });
         }
       } catch (error) {
@@ -341,7 +369,8 @@ export default function TierListLayout({
         .fill(null)
         .map((_, i) => {
           // Look for existing property name at this index across all diagrams
-          const existingName = diagrams.find((d) => d.properties[i]?.name)?.properties[i].name;
+          const existingName = diagrams.find((d) => d.properties[i]?.name)
+            ?.properties[i].name;
           return {
             diagram_id: newDiagram.id,
             name: existingName || `Property ${i + 1}`,
@@ -361,10 +390,16 @@ export default function TierListLayout({
         id: newDiagram.id,
         name: newDiagram.name,
         thumbnail: newDiagram.thumbnail,
-        properties: propertiesData.map((p) => ({ name: p.name, value: p.value })),
+        properties: propertiesData.map((p) => ({
+          name: p.name,
+          value: p.value,
+        })),
       };
 
-      setDiagrams((prevDiagrams) => [...prevDiagrams, newDiagramWithProperties]);
+      setDiagrams((prevDiagrams) => [
+        ...prevDiagrams,
+        newDiagramWithProperties,
+      ]);
       setCurrentDiagramId(newDiagram.id);
     } catch (error) {
       console.error("Error adding diagram:", error);
@@ -376,13 +411,20 @@ export default function TierListLayout({
       if (!id) return;
 
       try {
-        const { error } = await supabase.from("diagrams").delete().eq("id", diagramId);
+        const { error } = await supabase
+          .from("diagrams")
+          .delete()
+          .eq("id", diagramId);
         if (error) throw error;
 
         setDiagrams((prevDiagrams) => {
-          const filteredDiagrams = prevDiagrams.filter((d) => d.id !== diagramId);
+          const filteredDiagrams = prevDiagrams.filter(
+            (d) => d.id !== diagramId
+          );
           if (currentDiagramId === diagramId) {
-            setCurrentDiagramId(filteredDiagrams.length > 0 ? filteredDiagrams[0].id : "");
+            setCurrentDiagramId(
+              filteredDiagrams.length > 0 ? filteredDiagrams[0].id : ""
+            );
           }
           return filteredDiagrams;
         });
@@ -405,7 +447,9 @@ export default function TierListLayout({
 
         if (error) throw error;
 
-        setDiagrams((prevDiagrams) => prevDiagrams.map((d) => (d.id === diagramId ? { ...d, name } : d)));
+        setDiagrams((prevDiagrams) =>
+          prevDiagrams.map((d) => (d.id === diagramId ? { ...d, name } : d))
+        );
       } catch (error) {
         console.error("Error updating diagram name:", error);
       }
@@ -434,7 +478,10 @@ export default function TierListLayout({
 
   return (
     <div className="flex flex-col min-h-screen bg-white">
-      <Header tierListName={tierListName} isLoggedIn={true} onTierListNameChange={handleTierListNameChange} />
+      <Header
+        tierListName={tierListName}
+        onTierListNameChange={handleTierListNameChange}
+      />
       <div className="flex flex-col lg:flex-row flex-1 overflow-y-auto">
         {/* Large screens: Three-column layout */}
         <div className="hidden lg:flex flex-1">
@@ -456,6 +503,11 @@ export default function TierListLayout({
               onDiagramSelect={setCurrentDiagramId}
               onDiagramDelete={handleDiagramDelete}
               onDiagramNameChange={handleDiagramNameChange}
+              onPropertyChange={(propertyIndex, newValue) => {
+                if (currentDiagram) {
+                  handlePropertyChange(propertyIndex, { value: newValue });
+                }
+              }}
             />
           </div>
 
@@ -480,7 +532,11 @@ export default function TierListLayout({
         <div className="lg:hidden flex flex-col flex-1">
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
             <SheetTrigger asChild>
-              <Button variant="outline" size="icon" className="fixed right-1 top-16 z-50">
+              <Button
+                variant="outline"
+                size="icon"
+                className="fixed right-1 top-16 z-50"
+              >
                 <PanelRight className="h-4 w-4" />
               </Button>
             </SheetTrigger>
@@ -507,6 +563,11 @@ export default function TierListLayout({
               onDiagramSelect={setCurrentDiagramId}
               onDiagramDelete={handleDiagramDelete}
               onDiagramNameChange={handleDiagramNameChange}
+              onPropertyChange={(propertyIndex, newValue) => {
+                if (currentDiagram) {
+                  handlePropertyChange(propertyIndex, { value: newValue });
+                }
+              }}
               showDiagramList={true}
               sortedDiagrams={sortedDiagrams}
               onAddDiagram={handleAddDiagram}

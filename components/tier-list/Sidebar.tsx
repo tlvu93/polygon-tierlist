@@ -29,6 +29,8 @@ interface SidebarProps {
   currentDiagramId: string;
   onDiagramSelect: (id: string) => void;
   onAddDiagram: () => void;
+  isDraggable?: boolean;
+  onDraggableToggle?: (enabled: boolean) => void;
 }
 
 export default function Sidebar({
@@ -42,6 +44,8 @@ export default function Sidebar({
   currentDiagramId,
   onDiagramSelect,
   onAddDiagram,
+  isDraggable = false,
+  onDraggableToggle,
 }: SidebarProps) {
   const { toast } = useToast();
   const [currentTab, setCurrentTab] = useState("editor");
@@ -144,6 +148,26 @@ export default function Sidebar({
                       </Button>
                     </div>
                   </div>
+                  {onDraggableToggle && (
+                    <div>
+                      <label className="text-sm mb-1 block">Interaction</label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          id="draggable-toggle"
+                          checked={isDraggable}
+                          onChange={(e) => onDraggableToggle(e.target.checked)}
+                          className="w-4 h-4 text-orange-600 bg-gray-100 border-gray-300 rounded focus:ring-orange-500 focus:ring-2"
+                        />
+                        <label
+                          htmlFor="draggable-toggle"
+                          className="text-sm text-gray-700"
+                        >
+                          Draggable Properties
+                        </label>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 

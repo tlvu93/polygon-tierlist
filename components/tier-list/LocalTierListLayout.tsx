@@ -34,6 +34,7 @@ export default function TierListLayout({
   const [rightSidebarCollapsed, setRightSidebarCollapsed] = useState(false);
   const [leftSidebarWidth, setLeftSidebarWidth] = useState(256); // px
   const [rightSidebarWidth, setRightSidebarWidth] = useState(256); // px
+  const [isDraggable, setIsDraggable] = useState(false);
   const leftSidebarRef = useRef<HTMLDivElement>(null);
   const rightSidebarRef = useRef<HTMLDivElement>(null);
   const minSidebarWidth = 160;
@@ -346,6 +347,19 @@ export default function TierListLayout({
             onDiagramNameChange={(id, name) =>
               handleDiagramUpdate(id, { name })
             }
+            onPropertyChange={(propertyIndex, newValue) => {
+              if (currentDiagram) {
+                const updatedProperties = [...currentDiagram.properties];
+                updatedProperties[propertyIndex] = {
+                  ...updatedProperties[propertyIndex],
+                  value: newValue,
+                };
+                handleDiagramUpdate(currentDiagram.id, {
+                  properties: updatedProperties,
+                });
+              }
+            }}
+            isDraggable={isDraggable}
           />
         </div>
 
@@ -385,6 +399,8 @@ export default function TierListLayout({
               currentDiagramId={currentDiagramId}
               onDiagramSelect={handleDiagramSelect}
               onAddDiagram={handleAddDiagram}
+              isDraggable={isDraggable}
+              onDraggableToggle={setIsDraggable}
             />
           )}
           {/* Collapse/Expand Button */}
@@ -431,6 +447,19 @@ export default function TierListLayout({
             onDiagramNameChange={(id, name) =>
               handleDiagramUpdate(id, { name })
             }
+            onPropertyChange={(propertyIndex, newValue) => {
+              if (currentDiagram) {
+                const updatedProperties = [...currentDiagram.properties];
+                updatedProperties[propertyIndex] = {
+                  ...updatedProperties[propertyIndex],
+                  value: newValue,
+                };
+                handleDiagramUpdate(currentDiagram.id, {
+                  properties: updatedProperties,
+                });
+              }
+            }}
+            isDraggable={isDraggable}
           />
         </div>
 
@@ -467,6 +496,8 @@ export default function TierListLayout({
               currentDiagramId={currentDiagramId}
               onDiagramSelect={handleDiagramSelect}
               onAddDiagram={handleAddDiagram}
+              isDraggable={isDraggable}
+              onDraggableToggle={setIsDraggable}
             />
           </SheetContent>
         </Sheet>

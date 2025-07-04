@@ -4,7 +4,14 @@ import { useState, useTransition } from "react";
 import { useDebounce } from "@/hooks/useDebounce";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 import { ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
 import { Diagram } from "./types";
@@ -16,6 +23,8 @@ interface MainContentProps {
   onDiagramSelect: (id: string) => void;
   onDiagramDelete?: (id: string) => void;
   onDiagramNameChange?: (id: string, name: string) => void;
+  onPropertyChange?: (propertyIndex: number, newValue: number) => void;
+  isDraggable?: boolean;
   showDiagramList?: boolean;
   sortedDiagrams?: Diagram[];
   onAddDiagram?: () => void;
@@ -27,13 +36,17 @@ export default function MainContent({
   onDiagramSelect,
   onDiagramDelete,
   onDiagramNameChange,
+  onPropertyChange,
+  isDraggable = false,
 }: MainContentProps) {
   const [view, setView] = useState<"diagram" | "table">("diagram");
   const [isEditingName, setIsEditingName] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [localName, setLocalName] = useState("");
 
-  const currentDiagramIndex = diagrams.findIndex((d) => d.id === currentDiagramId);
+  const currentDiagramIndex = diagrams.findIndex(
+    (d) => d.id === currentDiagramId
+  );
   const currentDiagram = diagrams[currentDiagramIndex];
 
   const debouncedNameChange = useDebounce((id: string, name: string) => {
@@ -61,6 +74,12 @@ export default function MainContent({
       statsObject[prop.name.toLowerCase().replace(/\s+/g, "_")] = prop.value;
     });
     return statsObject;
+  };
+
+  const handlePropertyChange = (propertyIndex: number, newValue: number) => {
+    if (onPropertyChange) {
+      onPropertyChange(propertyIndex, newValue);
+    }
   };
 
   return (
@@ -114,7 +133,10 @@ export default function MainContent({
               <Trash2 className="h-4 w-4" />
             </Button>
           </div>
-          <Button variant="outline" onClick={() => setView(view === "diagram" ? "table" : "diagram")}>
+          <Button
+            variant="outline"
+            onClick={() => setView(view === "diagram" ? "table" : "diagram")}
+          >
             {view === "diagram" ? "Switch to Table" : "Switch to Diagram"}
           </Button>
         </div>
@@ -123,7 +145,11 @@ export default function MainContent({
           <div className="relative bg-slate-100 rounded-lg flex items-center justify-center p-2 sm:p-8 h-[calc(100vh-11rem)] sm:h-[calc(100vh-12rem)]">
             <div className="relative w-full h-full flex items-center justify-center">
               {currentDiagram ? (
-                <PolygonChart stats={propertiesToStats(currentDiagram)} />
+                <PolygonChart
+                  stats={propertiesToStats(currentDiagram)}
+                  onPropertyChange={handlePropertyChange}
+                  isDraggable={isDraggable}
+                />
               ) : (
                 <span className="absolute inset-0 flex items-center justify-center text-slate-400">
                   No diagram selected
