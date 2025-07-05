@@ -139,13 +139,17 @@ export function PolygonChart({
       onMouseLeave={handleMouseLeave}
       {...props}
     >
-      <div className="flex-1" style={{ minHeight: 0 }}>
+      <div
+        className="flex-1"
+        style={{ minHeight: isPreview ? "48px" : "200px" }}
+      >
         <div
           style={{
             width: "100%",
             height: isPreview ? "48px" : "100%",
             maxWidth: isPreview ? "none" : "800px",
             margin: "0 auto",
+            minHeight: isPreview ? "48px" : "200px",
           }}
         >
           <ResponsiveContainer width="100%" height="100%">
