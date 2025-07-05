@@ -32,6 +32,7 @@ interface PolygonChartProps extends React.HTMLAttributes<HTMLDivElement> {
   hideLabels?: boolean;
   isPreview?: boolean;
   onStatChange?: (statIndex: number, newValue: number) => void;
+  onStatSelect?: (statIndex: number | null) => void;
   isDraggable?: boolean;
 }
 
@@ -40,6 +41,7 @@ export function PolygonChart({
   hideLabels = false,
   isPreview = false,
   onStatChange,
+  onStatSelect,
   isDraggable = false,
   className = "polygon-chart",
   ...props
@@ -48,11 +50,10 @@ export function PolygonChart({
   const [isDragging, setIsDragging] = useState(false);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
 
-  // Transform stats object into Recharts data with shortened labels.
-  const data = Object.entries(stats).map(([key, value], index) => {
-    const shortLabel = `P${index + 1}`;
+  // Transform stats object into Recharts data with full labels.
+  const data = Object.entries(stats).map(([key, value]) => {
     return {
-      subject: shortLabel,
+      subject: key.toUpperCase(),
       fullName: key.toUpperCase(),
       value: value,
     };
@@ -137,6 +138,12 @@ export function PolygonChart({
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseLeave}
+      onClick={(e) => {
+        // Only deselect if clicking on the container itself (not child elements)
+        if (e.target === e.currentTarget && onStatSelect && !isPreview) {
+          onStatSelect(null);
+        }
+      }}
       {...props}
     >
       <div
@@ -150,6 +157,12 @@ export function PolygonChart({
             maxWidth: isPreview ? "none" : "800px",
             margin: "0 auto",
             minHeight: isPreview ? "48px" : "200px",
+          }}
+          onClick={() => {
+            // Deselect when clicking on the chart area
+            if (onStatSelect && !isPreview) {
+              onStatSelect(null);
+            }
           }}
         >
           <ResponsiveContainer width="100%" height="100%">
@@ -174,10 +187,38 @@ export function PolygonChart({
               {!hideLabels && (
                 <PolarAngleAxis
                   dataKey="subject"
-                  tick={{
-                    fill: "rgb(229, 231, 235)",
-                    fontSize: isPreview ? 12 : isMobile ? 9 : 12,
-                  }} // Smaller text on mobile
+                  tick={(props) => {
+                    const { x, y, textAnchor, payload } = props;
+                    const statIndex = data.findIndex(
+                      (item) => item.subject === payload.value
+                    );
+
+                    return (
+                      <g>
+                        <text
+                          x={x}
+                          y={y}
+                          textAnchor={textAnchor}
+                          fill="rgb(229, 231, 235)"
+                          fontSize={isPreview ? 12 : isMobile ? 9 : 12}
+                          style={{
+                            cursor:
+                              onStatSelect && !isPreview
+                                ? "pointer"
+                                : "default",
+                          }}
+                          onClick={(e) => {
+                            e.stopPropagation(); // Prevent bubbling to container
+                            if (onStatSelect && !isPreview) {
+                              onStatSelect(statIndex);
+                            }
+                          }}
+                        >
+                          {payload.value}
+                        </text>
+                      </g>
+                    );
+                  }}
                 />
               )}
               <Radar
@@ -197,7 +238,15 @@ export function PolygonChart({
                       key={`dot-${cx}-${cy}-${props.index}`}
                       onMouseDown={(e) => {
                         e.preventDefault();
+                        e.stopPropagation(); // Prevent bubbling to container
                         handleMouseDown(props.index);
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation(); // Prevent bubbling to container
+                        // Deselect when clicking on draggable dots
+                        if (onStatSelect && !isPreview) {
+                          onStatSelect(null);
+                        }
                       }}
                       style={{
                         cursor: isDraggable && !isPreview ? "grab" : "default",
@@ -239,24 +288,6 @@ export function PolygonChart({
           </ResponsiveContainer>
         </div>
       </div>
-      {!isPreview && !hideLabels && (
-        <div
-          className="mt-2 grid grid-cols-3 gap-1 text-xs text-gray-300"
-          style={{
-            userSelect: "none",
-            WebkitUserSelect: "none",
-            MozUserSelect: "none",
-            msUserSelect: "none",
-          }}
-        >
-          {data.map((item, index) => (
-            <div key={index} className="flex items-center gap-1">
-              <span className="font-semibold">{item.subject}:</span>
-              <span className="truncate">{item.fullName}</span>
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
 }

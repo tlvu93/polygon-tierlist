@@ -9,6 +9,7 @@ interface EditorTabProps {
   localStatNames: string[];
   localStatValues: number[];
   isPending: boolean;
+  selectedStatIndex?: number | null;
   isDraggable?: boolean;
   onDraggableToggle?: (enabled: boolean) => void;
   onStatCountChange: (increment: boolean) => void;
@@ -21,6 +22,7 @@ export function EditorTab({
   localStatNames,
   localStatValues,
   isPending,
+  selectedStatIndex,
   isDraggable = false,
   onDraggableToggle,
   onStatCountChange,
@@ -89,45 +91,67 @@ export function EditorTab({
         <div>
           <h3 className="text-sm font-medium text-slate-500 mb-3">Stats</h3>
           <div className="space-y-4">
-            {Array.from({ length: statCount }, (_, i) => (
-              <div key={i}>
-                <div className="mb-1 cursor-pointer hover:bg-slate-100 transition-colors py-1 px-1">
-                  <input
-                    type="text"
-                    value={localStatNames[i] || ""}
-                    onChange={(e) => {
-                      const newValue = e.target.value;
-                      onStatNameChange(i, newValue);
+            {Array.from({ length: statCount }, (_, i) => {
+              const isSelected = selectedStatIndex === i;
+              return (
+                <div
+                  key={i}
+                  className={`border-2 rounded-lg p-2 transition-all duration-200 ${
+                    isSelected
+                      ? "border-orange-400 bg-orange-50/50"
+                      : "border-transparent"
+                  }`}
+                >
+                  <div className="mb-1 cursor-pointer hover:bg-slate-100 transition-colors py-1 px-1">
+                    <input
+                      type="text"
+                      value={localStatNames[i] || ""}
+                      onChange={(e) => {
+                        const newValue = e.target.value;
+                        onStatNameChange(i, newValue);
+                      }}
+                      disabled={!isDraggable}
+                      className={`w-full bg-transparent border-0 outline-none border-b border-solid transition-colors px-1 ${
+                        isPending ? "text-slate-400" : ""
+                      } ${
+                        !isDraggable ? "opacity-50 cursor-not-allowed" : ""
+                      } ${
+                        isSelected
+                          ? "border-orange-400 font-medium text-orange-900"
+                          : "border-slate-200 hover:border-slate-400 focus:border-slate-400"
+                      }`}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between mb-1">
+                    <span
+                      className={`text-xs transition-colors ${
+                        isSelected
+                          ? "text-orange-600 font-medium"
+                          : "text-slate-500"
+                      }`}
+                    >
+                      Value: {localStatValues[i]?.toFixed(1) || "0.0"}
+                    </span>
+                  </div>
+                  <Slider
+                    value={[localStatValues[i] || 0]}
+                    onValueChange={([value]) => {
+                      if (isDraggable) {
+                        requestAnimationFrame(() => {
+                          onStatValueChange(i, value);
+                        });
+                      }
                     }}
+                    max={10}
+                    step={0.1}
                     disabled={!isDraggable}
-                    className={`w-full bg-transparent border-0 outline-none border-b border-solid border-slate-200 hover:border-slate-400 focus:border-slate-400 px-1 ${
-                      isPending ? "text-slate-400" : ""
-                    } ${!isDraggable ? "opacity-50 cursor-not-allowed" : ""}`}
+                    className={
+                      !isDraggable ? "opacity-50 cursor-not-allowed" : ""
+                    }
                   />
                 </div>
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs text-slate-500">
-                    Value: {localStatValues[i]?.toFixed(1) || "0.0"}
-                  </span>
-                </div>
-                <Slider
-                  value={[localStatValues[i] || 0]}
-                  onValueChange={([value]) => {
-                    if (isDraggable) {
-                      requestAnimationFrame(() => {
-                        onStatValueChange(i, value);
-                      });
-                    }
-                  }}
-                  max={10}
-                  step={0.1}
-                  disabled={!isDraggable}
-                  className={
-                    !isDraggable ? "opacity-50 cursor-not-allowed" : ""
-                  }
-                />
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>

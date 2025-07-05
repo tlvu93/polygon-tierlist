@@ -37,6 +37,9 @@ export default function TierListLayout({
   const [leftSidebarWidth, setLeftSidebarWidth] = useState(256); // px
   const [rightSidebarWidth, setRightSidebarWidth] = useState(256); // px
   const [isDraggable, setIsDraggable] = useState(true);
+  const [selectedStatIndex, setSelectedStatIndex] = useState<number | null>(
+    null
+  );
   const leftSidebarRef = useRef<HTMLDivElement>(null);
   const rightSidebarRef = useRef<HTMLDivElement>(null);
   const minSidebarWidth = 160;
@@ -383,6 +386,9 @@ export default function TierListLayout({
                 });
               }
             }}
+            onStatSelect={(statIndex) => {
+              setSelectedStatIndex(statIndex);
+            }}
             isDraggable={isDraggable}
           />
         </div>
@@ -406,6 +412,7 @@ export default function TierListLayout({
               onStatCountChange={handleStatCountChange}
               currentPolyList={currentPolyList}
               statNames={statNames}
+              selectedStatIndex={selectedStatIndex}
               onStatChange={(index, change) => {
                 if (currentPolyList) {
                   const updatedStats = [...currentPolyList.stats];
@@ -483,6 +490,9 @@ export default function TierListLayout({
                 });
               }
             }}
+            onStatSelect={(statIndex) => {
+              setSelectedStatIndex(statIndex);
+            }}
             isDraggable={isDraggable}
           />
         </div>
@@ -503,6 +513,7 @@ export default function TierListLayout({
               onStatCountChange={handleStatCountChange}
               currentPolyList={currentPolyList}
               statNames={statNames}
+              selectedStatIndex={selectedStatIndex}
               onStatChange={(index, change) => {
                 if (currentPolyList) {
                   const updatedStats = [...currentPolyList.stats];

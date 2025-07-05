@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PolyList, Stat } from "./types";
 import PolyListList from "./components/polylist/PolyListList";
@@ -17,6 +17,7 @@ interface SidebarProps {
   onStatCountChange: (count: number) => void;
   currentPolyList?: PolyList;
   statNames: string[];
+  selectedStatIndex?: number | null;
   onStatChange: (index: number, change: Partial<Stat>) => void;
   onSortingChange: (sortingConfigs: SortingConfig[]) => void;
   polyLists: PolyList[];
@@ -32,6 +33,7 @@ export default function Sidebar({
   onStatCountChange,
   currentPolyList,
   statNames,
+  selectedStatIndex,
   onStatChange,
   onSortingChange,
   polyLists,
@@ -42,6 +44,13 @@ export default function Sidebar({
   onDraggableToggle,
 }: SidebarProps) {
   const [currentTab, setCurrentTab] = useState("editor");
+
+  // Auto-switch to editor tab when a stat is selected
+  useEffect(() => {
+    if (selectedStatIndex !== null && selectedStatIndex !== undefined) {
+      setCurrentTab("editor");
+    }
+  }, [selectedStatIndex]);
 
   const {
     localStatNames,
@@ -79,6 +88,7 @@ export default function Sidebar({
             localStatNames={localStatNames}
             localStatValues={localStatValues}
             isPending={isPending}
+            selectedStatIndex={selectedStatIndex}
             isDraggable={isDraggable}
             onDraggableToggle={onDraggableToggle}
             onStatCountChange={handleStatCountChange}

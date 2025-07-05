@@ -24,6 +24,7 @@ interface MainContentProps {
   onPolyListDelete?: (id: string) => void;
   onPolyListNameChange?: (id: string, name: string) => void;
   onStatChange?: (statIndex: number, newValue: number) => void;
+  onStatSelect?: (statIndex: number | null) => void;
   isDraggable?: boolean;
   showPolyListList?: boolean;
   sortedPolyLists?: PolyList[];
@@ -37,6 +38,7 @@ export default function MainContent({
   onPolyListDelete,
   onPolyListNameChange,
   onStatChange,
+  onStatSelect,
   isDraggable = false,
 }: MainContentProps) {
   const [view, setView] = useState<"polyList" | "table">("polyList");
@@ -156,6 +158,7 @@ export default function MainContent({
                 <PolygonChart
                   stats={statsToStats(currentPolyList)}
                   onStatChange={handleStatChange}
+                  onStatSelect={onStatSelect}
                   isDraggable={isDraggable}
                 />
               ) : (
