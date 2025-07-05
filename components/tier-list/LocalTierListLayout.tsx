@@ -36,7 +36,7 @@ export default function TierListLayout({
   const [rightSidebarCollapsed, setRightSidebarCollapsed] = useState(false);
   const [leftSidebarWidth, setLeftSidebarWidth] = useState(256); // px
   const [rightSidebarWidth, setRightSidebarWidth] = useState(256); // px
-  const [isDraggable, setIsDraggable] = useState(false);
+  const [isDraggable, setIsDraggable] = useState(true);
   const leftSidebarRef = useRef<HTMLDivElement>(null);
   const rightSidebarRef = useRef<HTMLDivElement>(null);
   const minSidebarWidth = 160;

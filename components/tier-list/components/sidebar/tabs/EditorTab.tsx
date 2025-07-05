@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
-import { MinusCircle, PlusCircle } from "lucide-react";
+import { MinusCircle, PlusCircle, Lock, Unlock } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
 interface EditorTabProps {
@@ -36,6 +36,26 @@ export function EditorTab({
             General Settings
           </h3>
           <div className="space-y-3">
+            {onDraggableToggle && (
+              <div>
+                <label className="text-sm mb-1 block">Interaction</label>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onDraggableToggle(!isDraggable)}
+                  className="flex items-center gap-2"
+                >
+                  {isDraggable ? (
+                    <Unlock className="w-4 h-4" />
+                  ) : (
+                    <Lock className="w-4 h-4" />
+                  )}
+                  <span>
+                    {isDraggable ? "Lock Settings" : "Unlock Settings"}
+                  </span>
+                </Button>
+              </div>
+            )}
             <div>
               <label className="text-sm mb-1 block">Stats</label>
               <div className="flex items-center gap-2">
@@ -43,7 +63,7 @@ export function EditorTab({
                   variant="outline"
                   size="icon"
                   onClick={() => onStatCountChange(false)}
-                  disabled={statCount <= 3}
+                  disabled={statCount <= 3 || !isDraggable}
                 >
                   <MinusCircle className="w-4 h-4" />
                 </Button>
@@ -54,32 +74,12 @@ export function EditorTab({
                   variant="outline"
                   size="icon"
                   onClick={() => onStatCountChange(true)}
-                  disabled={statCount >= 8}
+                  disabled={statCount >= 8 || !isDraggable}
                 >
                   <PlusCircle className="w-4 h-4" />
                 </Button>
               </div>
             </div>
-            {onDraggableToggle && (
-              <div>
-                <label className="text-sm mb-1 block">Interaction</label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    id="draggable-toggle"
-                    checked={isDraggable}
-                    onChange={(e) => onDraggableToggle(e.target.checked)}
-                    className="w-4 h-4 text-orange-600 bg-gray-100 border-gray-300 rounded focus:ring-orange-500 focus:ring-2"
-                  />
-                  <label
-                    htmlFor="draggable-toggle"
-                    className="text-sm text-gray-700"
-                  >
-                    Draggable Stats
-                  </label>
-                </div>
-              </div>
-            )}
           </div>
         </div>
 
@@ -99,9 +99,10 @@ export function EditorTab({
                       const newValue = e.target.value;
                       onStatNameChange(i, newValue);
                     }}
+                    disabled={!isDraggable}
                     className={`w-full bg-transparent border-0 outline-none border-b border-solid border-slate-200 hover:border-slate-400 focus:border-slate-400 px-1 ${
                       isPending ? "text-slate-400" : ""
-                    }`}
+                    } ${!isDraggable ? "opacity-50 cursor-not-allowed" : ""}`}
                   />
                 </div>
                 <div className="flex items-center justify-between mb-1">
@@ -112,12 +113,18 @@ export function EditorTab({
                 <Slider
                   value={[localStatValues[i] || 0]}
                   onValueChange={([value]) => {
-                    requestAnimationFrame(() => {
-                      onStatValueChange(i, value);
-                    });
+                    if (isDraggable) {
+                      requestAnimationFrame(() => {
+                        onStatValueChange(i, value);
+                      });
+                    }
                   }}
                   max={10}
                   step={0.1}
+                  disabled={!isDraggable}
+                  className={
+                    !isDraggable ? "opacity-50 cursor-not-allowed" : ""
+                  }
                 />
               </div>
             ))}
