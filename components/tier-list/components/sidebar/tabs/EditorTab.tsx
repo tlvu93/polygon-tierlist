@@ -168,8 +168,7 @@ export function EditorTab({
                       Value: {stat.value.toFixed(1)}
                     </span>
                   </div>
-                  {/* TEMPORARILY DISABLED FOR DEBUGGING */}
-                  {/* <Slider
+                  <Slider
                     key={`slider-${stat.index}-${stat.value}`}
                     value={stat.sliderValue}
                     onValueChange={handleValueChange(stat.index)}
@@ -179,10 +178,7 @@ export function EditorTab({
                     className={
                       !isDraggable ? "opacity-50 cursor-not-allowed" : ""
                     }
-                  /> */}
-                  <div className="h-6 bg-slate-200 rounded flex items-center justify-center text-xs text-slate-500">
-                    Slider disabled for debugging
-                  </div>
+                  />
                 </div>
               );
             })}
