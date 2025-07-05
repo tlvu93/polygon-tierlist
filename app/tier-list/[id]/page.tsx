@@ -10,12 +10,14 @@ export default function TierListPage({
   params: Promise<{ id: string }>;
 }) {
   const [tierListName, setTierListName] = useState<string>("");
+  const [tierListId, setTierListId] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const loadTierList = async () => {
       try {
         const { id } = await params;
+        setTierListId(id);
         const tierLists = localStorageAPI.getTierLists();
         const tierList = tierLists.find((tl) => tl.id === id);
 
@@ -39,5 +41,5 @@ export default function TierListPage({
     return <div>Loading...</div>;
   }
 
-  return <LocalTierListLayout tierListName={tierListName} />;
+  return <LocalTierListLayout tierListName={tierListName} id={tierListId} />;
 }

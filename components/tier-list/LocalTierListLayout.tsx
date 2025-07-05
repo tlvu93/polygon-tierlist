@@ -57,11 +57,12 @@ export default function TierListLayout({
         setSortingConfigs(data.sortingConfigs || []);
       } else {
         // Create a default diagram if none exist
+        const defaultStatCount = 5;
         const defaultDiagram: PolyList = {
           id: `diagram-${Date.now()}`,
           name: "Poly List 1",
           thumbnail: "/placeholder.svg",
-          stats: Array(statCount)
+          stats: Array(defaultStatCount)
             .fill(null)
             .map((_, i) => ({
               name: `Stat ${i + 1}`,
@@ -71,14 +72,23 @@ export default function TierListLayout({
 
         setPolyLists([defaultDiagram]);
         setCurrentPolyListId(defaultDiagram.id);
+        setStatCount(defaultStatCount);
 
         // Save to localStorage
-        saveToLocalStorage([defaultDiagram], defaultDiagram.id);
+        const tierListData = {
+          name: initialTierListName,
+          polyLists: [defaultDiagram],
+          currentPolyListId: defaultDiagram.id,
+          statCount: defaultStatCount,
+          sortingConfigs: [],
+          lastModified: new Date().toISOString(),
+        };
+        localStorage.setItem(`tierlist-${id}`, JSON.stringify(tierListData));
       }
     } catch (error) {
       console.error("Error loading diagrams:", error);
     }
-  }, [id, statCount, initialTierListName]);
+  }, [id, initialTierListName]);
 
   // Save to localStorage
   const saveToLocalStorage = (
@@ -102,12 +112,26 @@ export default function TierListLayout({
     loadPolyLists();
   }, [loadPolyLists]);
 
-  // Auto-save when data changes
+  // Auto-save when data changes (excluding initial load)
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+
   useEffect(() => {
+    if (isInitialLoad) {
+      setIsInitialLoad(false);
+      return;
+    }
+
     if (polyLists.length > 0 && currentPolyListId) {
       saveToLocalStorage(polyLists, currentPolyListId);
     }
-  }, [polyLists, currentPolyListId, tierListName, statCount, sortingConfigs]);
+  }, [
+    polyLists,
+    currentPolyListId,
+    tierListName,
+    statCount,
+    sortingConfigs,
+    isInitialLoad,
+  ]);
 
   const currentPolyList = useMemo(
     () => polyLists.find((d) => d.id === currentPolyListId),
