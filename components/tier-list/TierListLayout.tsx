@@ -497,27 +497,13 @@ export default function TierListLayout({
               onPolyListSelect={setCurrentPolyListId}
               onPolyListDelete={handlePolyListDelete}
               onPolyListNameChange={handlePolyListNameChange}
-              onStatChange={(statIndex, newValue) => {
-                if (currentPolyList) {
-                  handlestatChange(statIndex, { value: newValue });
-                }
-              }}
             />
           </div>
 
           {/* Right column - Sidebar (20%) */}
           <div className="w-1/5">
             <Sidebar
-              statCount={statCount}
-              onStatCountChange={handlestatCountChange}
-              currentPolyList={currentPolyList}
-              statNames={statNames}
-              onStatChange={handlestatChange}
-              onSortingChange={setSortingConfigs}
-              polyLists={polyLists}
-              currentPolyListId={currentPolyListId}
-              onPolyListSelect={setCurrentPolyListId}
-              onAddPolyList={handleAddPolyList}
+              onStatCountChange={async (count) => handlestatCountChange(count)}
             />
           </div>
         </div>
@@ -536,16 +522,9 @@ export default function TierListLayout({
             </SheetTrigger>
             <SheetContent side="right" className="w-[280px] sm:w-[450px] p-0">
               <Sidebar
-                statCount={statCount}
-                onStatCountChange={handlestatCountChange}
-                currentPolyList={currentPolyList}
-                statNames={statNames}
-                onStatChange={handlestatChange}
-                onSortingChange={setSortingConfigs}
-                polyLists={polyLists}
-                currentPolyListId={currentPolyListId}
-                onPolyListSelect={setCurrentPolyListId}
-                onAddPolyList={handleAddPolyList}
+                onStatCountChange={async (count) =>
+                  handlestatCountChange(count)
+                }
               />
             </SheetContent>
           </Sheet>
@@ -557,11 +536,6 @@ export default function TierListLayout({
               onPolyListSelect={setCurrentPolyListId}
               onPolyListDelete={handlePolyListDelete}
               onPolyListNameChange={handlePolyListNameChange}
-              onStatChange={(statIndex, newValue) => {
-                if (currentPolyList) {
-                  handlestatChange(statIndex, { value: newValue });
-                }
-              }}
               showPolyListList={true}
               sortedPolyLists={sortedPolyLists}
               onAddPolyList={handleAddPolyList}

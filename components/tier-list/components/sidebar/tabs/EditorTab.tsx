@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
 import { MinusCircle, PlusCircle, Lock, Unlock } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { useMemo, useCallback } from "react";
 
 interface EditorTabProps {
   statCount: number;
@@ -29,6 +30,40 @@ export function EditorTab({
   onStatNameChange,
   onStatValueChange,
 }: EditorTabProps) {
+  // Memoize stat items to prevent unnecessary re-renders
+  const statItems = useMemo(() => {
+    return Array.from({ length: statCount }, (_, i) => {
+      const statValue = localStatValues[i];
+      // Ensure we have a valid number, default to 5 if undefined/NaN
+      const safeValue =
+        typeof statValue === "number" && !isNaN(statValue) ? statValue : 5;
+      const statName = localStatNames[i] || `Stat ${i + 1}`;
+
+      return {
+        index: i,
+        value: safeValue,
+        name: statName,
+        // Create a stable array reference for the Slider value
+        sliderValue: [safeValue],
+      };
+    });
+  }, [statCount, localStatValues, localStatNames]);
+
+  // Memoize the value change handler to prevent recreating on every render
+  const handleValueChange = useCallback(
+    (index: number) => {
+      return ([value]: number[]) => {
+        if (isDraggable && typeof value === "number" && !isNaN(value)) {
+          // Use setTimeout instead of requestAnimationFrame to prevent sync updates
+          setTimeout(() => {
+            onStatValueChange(index, value);
+          }, 0);
+        }
+      };
+    },
+    [isDraggable, onStatValueChange]
+  );
+
   return (
     <Card className="p-3">
       <div className="space-y-6">
@@ -91,11 +126,11 @@ export function EditorTab({
         <div>
           <h3 className="text-sm font-medium text-slate-500 mb-3">Stats</h3>
           <div className="space-y-4">
-            {Array.from({ length: statCount }, (_, i) => {
-              const isSelected = selectedStatIndex === i;
+            {statItems.map((stat) => {
+              const isSelected = selectedStatIndex === stat.index;
               return (
                 <div
-                  key={i}
+                  key={`stat-${stat.index}`}
                   className={`border-2 rounded-lg p-2 transition-all duration-200 ${
                     isSelected
                       ? "border-orange-400 bg-orange-50/50"
@@ -105,10 +140,10 @@ export function EditorTab({
                   <div className="mb-1 cursor-pointer hover:bg-slate-100 transition-colors py-1 px-1">
                     <input
                       type="text"
-                      value={localStatNames[i] || ""}
+                      value={stat.name}
                       onChange={(e) => {
                         const newValue = e.target.value;
-                        onStatNameChange(i, newValue);
+                        onStatNameChange(stat.index, newValue);
                       }}
                       disabled={!isDraggable}
                       className={`w-full bg-transparent border-0 outline-none border-b border-solid transition-colors px-1 ${
@@ -130,25 +165,24 @@ export function EditorTab({
                           : "text-slate-500"
                       }`}
                     >
-                      Value: {localStatValues[i]?.toFixed(1) || "0.0"}
+                      Value: {stat.value.toFixed(1)}
                     </span>
                   </div>
-                  <Slider
-                    value={[localStatValues[i] || 0]}
-                    onValueChange={([value]) => {
-                      if (isDraggable) {
-                        requestAnimationFrame(() => {
-                          onStatValueChange(i, value);
-                        });
-                      }
-                    }}
+                  {/* TEMPORARILY DISABLED FOR DEBUGGING */}
+                  {/* <Slider
+                    key={`slider-${stat.index}-${stat.value}`}
+                    value={stat.sliderValue}
+                    onValueChange={handleValueChange(stat.index)}
                     max={10}
                     step={0.1}
                     disabled={!isDraggable}
                     className={
                       !isDraggable ? "opacity-50 cursor-not-allowed" : ""
                     }
-                  />
+                  /> */}
+                  <div className="h-6 bg-slate-200 rounded flex items-center justify-center text-xs text-slate-500">
+                    Slider disabled for debugging
+                  </div>
                 </div>
               );
             })}

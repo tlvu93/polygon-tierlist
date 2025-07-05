@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
-import { PolyList } from "../types";
+import { PolyList } from "../../../types";
 
 interface SortingConfig {
   stat: number;

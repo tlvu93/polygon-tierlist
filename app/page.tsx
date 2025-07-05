@@ -1,9 +1,10 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { PolygonChart } from "@/components/tier-list/PolygonChart";
+import { PolygonChart } from "@/components/tier-list/components/chart/PolygonChart";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTierListDataStore, createPolyList } from "@/stores";
 
 export default function LandingPage() {
   const [showPage, setShowPage] = useState(false);
@@ -17,6 +18,22 @@ export default function LandingPage() {
     } else {
       // First visit, show the landing page
       setShowPage(true);
+
+      // Initialize store with demo data for the landing page
+      const demoPolyList = createPolyList("Demo Poly List", 5);
+      demoPolyList.stats = [
+        { name: "Analytical Thinking", value: 9 },
+        { name: "Resilience", value: 8 },
+        { name: "Creativity", value: 7 },
+        { name: "Craftsmanship", value: 7 },
+        { name: "Social Intelligence", value: 5 },
+      ];
+
+      useTierListDataStore.setState({
+        polyLists: [demoPolyList],
+        currentPolyListId: demoPolyList.id,
+        statCount: 5,
+      });
     }
   }, [router]);
 
@@ -37,15 +54,7 @@ export default function LandingPage() {
           Create and Share Poly Tier Lists
         </h1>
         <div className="h-[250px] sm:h-[300px] w-full">
-          <PolygonChart
-            stats={{
-              "Analytical Thinking": 9,
-              Resilience: 8,
-              Creativity: 7,
-              Craftsmanship: 7,
-              "Social Intelligence": 5,
-            }}
-          />
+          <PolygonChart />
         </div>
         <p className="mt-4 sm:mt-6 text-base sm:text-lg leading-7 sm:leading-8 text-gray-600">
           Organize, rank, and share your favorite items in beautiful tier lists.

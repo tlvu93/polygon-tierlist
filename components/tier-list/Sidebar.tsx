@@ -2,48 +2,52 @@
 
 import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { PolyList, Stat } from "./types";
 import PolyListList from "./components/polylist/PolyListList";
 import { useSidebarState } from "./components/sidebar/hooks";
 import { EditorTab, SortingTab, SharingTab } from "./components/sidebar/tabs";
+import {
+  useCurrentPolyList,
+  useStatNames,
+  useSelectedStatIndex,
+  useSortedPolyLists,
+  useIsDraggable,
+  useTierListDataStore,
+  createPolyList,
+} from "@/stores";
 
-interface SortingConfig {
-  stat: number;
-  weight: number;
-}
-
+// Only keep props that are truly needed for special cases
 interface SidebarProps {
-  statCount: number;
-  onStatCountChange: (count: number) => void;
-  currentPolyList?: PolyList;
-  statNames: string[];
-  selectedStatIndex?: number | null;
-  onStatChange: (index: number, change: Partial<Stat>) => void;
-  onSortingChange: (sortingConfigs: SortingConfig[]) => void;
-  polyLists: PolyList[];
-  currentPolyListId: string;
-  onPolyListSelect: (id: string) => void;
-  onAddPolyList: () => void;
-  isDraggable?: boolean;
   onDraggableToggle?: (enabled: boolean) => void;
+  onStatCountChange?: (count: number) => void;
 }
 
 export default function Sidebar({
-  statCount,
-  onStatCountChange,
-  currentPolyList,
-  statNames,
-  selectedStatIndex,
-  onStatChange,
-  onSortingChange,
-  polyLists,
-  currentPolyListId,
-  onPolyListSelect,
-  onAddPolyList,
-  isDraggable = false,
   onDraggableToggle,
+  onStatCountChange,
 }: SidebarProps) {
   const [currentTab, setCurrentTab] = useState("editor");
+
+  // Get data from stores
+  const statCount = useTierListDataStore((state) => state.statCount);
+  const currentPolyList = useCurrentPolyList();
+  const statNames = useStatNames();
+  const selectedStatIndex = useSelectedStatIndex();
+  const polyLists = useSortedPolyLists();
+  const currentPolyListId = useTierListDataStore(
+    (state) => state.currentPolyListId
+  );
+  const isDraggable = useIsDraggable();
+
+  // Get store actions
+  const updateStat = useTierListDataStore((state) => state.updateStat);
+  const setSortingConfigs = useTierListDataStore(
+    (state) => state.setSortingConfigs
+  );
+  const setCurrentPolyListId = useTierListDataStore(
+    (state) => state.setCurrentPolyListId
+  );
+  const addPolyList = useTierListDataStore((state) => state.addPolyList);
+  const setStatCount = useTierListDataStore((state) => state.setStatCount);
 
   // Auto-switch to editor tab when a stat is selected
   useEffect(() => {
@@ -51,6 +55,35 @@ export default function Sidebar({
       setCurrentTab("editor");
     }
   }, [selectedStatIndex]);
+
+  // Handle adding new poly list
+  const handleAddPolyList = () => {
+    const newPolyList = createPolyList(
+      `Poly List ${polyLists.length + 1}`,
+      statCount
+    );
+    addPolyList(newPolyList);
+    setCurrentPolyListId(newPolyList.id);
+  };
+
+  // Handle stat change using store
+  const handleStatChange = (
+    index: number,
+    change: { name?: string; value?: number }
+  ) => {
+    if (currentPolyList) {
+      updateStat(currentPolyList.id, index, change);
+    }
+  };
+
+  // Handle stat count change - use prop if provided, otherwise use store
+  const handleStatCountChange = (count: number) => {
+    if (onStatCountChange) {
+      onStatCountChange(count);
+    } else {
+      setStatCount(count);
+    }
+  };
 
   const {
     localStatNames,
@@ -60,13 +93,13 @@ export default function Sidebar({
     debouncedStatNameChange,
     debouncedStatValueChange,
     debouncedSortingChange,
-    handleStatCountChange,
+    handleStatCountChange: hookStatCountChange,
   } = useSidebarState({
     statCount,
     currentPolyList,
-    onStatChange,
-    onSortingChange,
-    onStatCountChange,
+    onStatChange: handleStatChange,
+    onSortingChange: setSortingConfigs,
+    onStatCountChange: handleStatCountChange,
   });
 
   return (
@@ -91,7 +124,7 @@ export default function Sidebar({
             selectedStatIndex={selectedStatIndex}
             isDraggable={isDraggable}
             onDraggableToggle={onDraggableToggle}
-            onStatCountChange={handleStatCountChange}
+            onStatCountChange={hookStatCountChange}
             onStatNameChange={debouncedStatNameChange}
             onStatValueChange={debouncedStatValueChange}
           />
@@ -116,8 +149,8 @@ export default function Sidebar({
           <PolyListList
             polyLists={polyLists}
             currentPolyListId={currentPolyListId}
-            onPolyListSelect={onPolyListSelect}
-            onAddPolyList={onAddPolyList}
+            onPolyListSelect={setCurrentPolyListId}
+            onAddPolyList={handleAddPolyList}
           />
         </TabsContent>
       </Tabs>

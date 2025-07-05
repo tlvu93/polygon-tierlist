@@ -1,21 +1,26 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback, useRef } from "react";
+import { useEffect, useRef } from "react";
 import Header from "@/app/components/Header";
-
 import Sidebar from "./Sidebar";
-
-import { PolyList } from "./types";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { PanelRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import PolyListList from "./components/polylist/PolyListList";
 import MainContent from "./components/content/MainContent";
-
-interface SortingConfig {
-  stat: number;
-  weight: number;
-}
+import {
+  useTierListDataStore,
+  useTierListUIStore,
+  useCurrentPolyList,
+  useSortedPolyLists,
+  useLeftSidebarState,
+  useRightSidebarState,
+  useIsSheetOpen,
+  useIsDraggable,
+  useSelectedStatIndex,
+  useHasHydrated,
+  createPolyList,
+} from "@/stores";
 
 interface TierListLayoutProps {
   tierListName?: string;
@@ -26,247 +31,111 @@ export default function TierListLayout({
   tierListName: initialTierListName = "Headphone Comparison",
   id,
 }: TierListLayoutProps) {
-  const [tierListName, setTierListName] = useState(initialTierListName);
-  const [statCount, setStatCount] = useState(5);
-  const [currentPolyListId, setCurrentPolyListId] = useState("");
-  const [polyLists, setPolyLists] = useState<PolyList[]>([]);
-  const [sortingConfigs, setSortingConfigs] = useState<SortingConfig[]>([]);
-  const [isOpen, setIsOpen] = useState(false);
-  const [leftSidebarCollapsed, setLeftSidebarCollapsed] = useState(false);
-  const [rightSidebarCollapsed, setRightSidebarCollapsed] = useState(false);
-  const [leftSidebarWidth, setLeftSidebarWidth] = useState(256); // px
-  const [rightSidebarWidth, setRightSidebarWidth] = useState(256); // px
-  const [isDraggable, setIsDraggable] = useState(true);
-  const [selectedStatIndex, setSelectedStatIndex] = useState<number | null>(
-    null
-  );
+  // Get data from stores
+  const {
+    tierListName,
+    statCount,
+    polyLists,
+    currentPolyListId,
+    setTierListName,
+    addPolyList,
+    updatePolyList,
+    deletePolyList,
+    setCurrentPolyListId,
+    updateStat,
+    setSortingConfigs,
+  } = useTierListDataStore();
+
+  const {
+    toggleLeftSidebar,
+    toggleRightSidebar,
+    setLeftSidebarWidth,
+    setRightSidebarWidth,
+    setIsDraggable,
+    setSelectedStatIndex,
+    setIsSheetOpen,
+  } = useTierListUIStore();
+
+  // Get computed values from stores
+  const currentPolyList = useCurrentPolyList();
+  const sortedPolyLists = useSortedPolyLists();
+  const leftSidebar = useLeftSidebarState();
+  const rightSidebar = useRightSidebarState();
+  const isSheetOpen = useIsSheetOpen();
+  const isDraggable = useIsDraggable();
+  const selectedStatIndex = useSelectedStatIndex();
+
   const leftSidebarRef = useRef<HTMLDivElement>(null);
   const rightSidebarRef = useRef<HTMLDivElement>(null);
   const minSidebarWidth = 160;
   const maxSidebarWidth = 400;
+  const hasHydrated = useHasHydrated();
 
-  // Load diagrams and stats from localStorage
-  const loadPolyLists = useCallback(() => {
-    if (!id) return;
-
-    try {
-      const tierListData = localStorage.getItem(`tierlist-${id}`);
-      if (tierListData) {
-        const data = JSON.parse(tierListData);
-        setPolyLists(data.polyLists || []);
-        setCurrentPolyListId(data.currentPolyListId || "");
-        setTierListName(data.name || initialTierListName);
-        setStatCount(data.statCount || 5);
-        setSortingConfigs(data.sortingConfigs || []);
-      } else {
-        // Create a default diagram if none exist
-        const defaultStatCount = 5;
-        const defaultDiagram: PolyList = {
-          id: `diagram-${Date.now()}`,
-          name: "Poly List 1",
-          thumbnail: "/placeholder.svg",
-          stats: Array(defaultStatCount)
-            .fill(null)
-            .map((_, i) => ({
-              name: `Stat ${i + 1}`,
-              value: 5.0,
-            })),
-        };
-
-        setPolyLists([defaultDiagram]);
-        setCurrentPolyListId(defaultDiagram.id);
-        setStatCount(defaultStatCount);
-
-        // Save to localStorage
-        const tierListData = {
-          name: initialTierListName,
-          polyLists: [defaultDiagram],
-          currentPolyListId: defaultDiagram.id,
-          statCount: defaultStatCount,
-          sortingConfigs: [],
-          lastModified: new Date().toISOString(),
-        };
-        localStorage.setItem(`tierlist-${id}`, JSON.stringify(tierListData));
-      }
-    } catch (error) {
-      console.error("Error loading diagrams:", error);
-    }
-  }, [id, initialTierListName]);
-
-  // Save to localStorage
-  const saveToLocalStorage = (
-    polyLists: PolyList[],
-    currentPolyListId: string
-  ) => {
-    if (!id) return;
-
-    const tierListData = {
-      name: tierListName,
-      polyLists: polyLists,
-      currentPolyListId: currentPolyListId,
-      statCount: statCount,
-      sortingConfigs: sortingConfigs,
-      lastModified: new Date().toISOString(),
-    };
-    localStorage.setItem(`tierlist-${id}`, JSON.stringify(tierListData));
-  };
-
+  // Initialize data after hydration
   useEffect(() => {
-    loadPolyLists();
-  }, [loadPolyLists]);
+    if (!hasHydrated || !id) return;
 
-  // Auto-save when data changes (excluding initial load)
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
-
-  useEffect(() => {
-    if (isInitialLoad) {
-      setIsInitialLoad(false);
-      return;
+    // Set tier list name if not already set
+    if (!tierListName || tierListName === "Headphone Comparison") {
+      setTierListName(initialTierListName);
     }
 
-    if (polyLists.length > 0 && currentPolyListId) {
-      saveToLocalStorage(polyLists, currentPolyListId);
+    // Ensure we have at least one poly list
+    if (polyLists.length === 0) {
+      const defaultPolyList = createPolyList("Poly List 1", 5);
+      addPolyList(defaultPolyList);
+      setCurrentPolyListId(defaultPolyList.id);
     }
   }, [
-    polyLists,
-    currentPolyListId,
+    hasHydrated,
+    id,
+    initialTierListName,
     tierListName,
-    statCount,
-    sortingConfigs,
-    isInitialLoad,
+    polyLists.length,
+    setTierListName,
+    addPolyList,
+    setCurrentPolyListId,
   ]);
 
-  const currentPolyList = useMemo(
-    () => polyLists.find((d) => d.id === currentPolyListId),
-    [polyLists, currentPolyListId]
-  );
-
-  const sortedPolyLists = useMemo(() => {
-    if (sortingConfigs.length === 0) return polyLists;
-
-    return [...polyLists].sort((a, b) => {
-      let scoreA = 0;
-      let scoreB = 0;
-      const totalWeight = sortingConfigs.reduce(
-        (sum, config) => sum + config.weight,
-        0
-      );
-
-      // Normalize weights if total is not 1
-      const normalizer = totalWeight === 0 ? 1 : totalWeight;
-
-      sortingConfigs.forEach((config) => {
-        const propA = a.stats[config.stat]?.value || 0;
-        const propB = b.stats[config.stat]?.value || 0;
-        const normalizedWeight = config.weight / normalizer;
-
-        scoreA += propA * normalizedWeight;
-        scoreB += propB * normalizedWeight;
-      });
-
-      return scoreB - scoreA; // Sort in descending order (highest score first)
-    });
-  }, [polyLists, sortingConfigs]);
-
-  // Pre-compute stat names for the current diagram
-  const statNames = useMemo(() => {
-    return Array(statCount)
-      .fill(null)
-      .map((_, i) => currentPolyList?.stats[i]?.name || `Stat ${i + 1}`);
-  }, [statCount, currentPolyList]);
-
-  // Handle stat count changes
-  const handleStatCountChange = useCallback(
-    (newCount: number) => {
-      if (!id) return;
-
-      try {
-        const updatedPolyLists = [...polyLists];
-
-        for (let i = 0; i < updatedPolyLists.length; i++) {
-          const polyList = updatedPolyLists[i];
-          let newStats = [...polyList.stats];
-
-          if (newStats.length < newCount) {
-            // Add new stats with consistent names
-            const additionalStats = Array(newCount - newStats.length)
-              .fill(null)
-              .map((_, i) => {
-                const statIndex = newStats.length + i;
-                // Look for existing stat name at this index across all diagrams
-                const existingName = polyLists.find(
-                  (d) => d.stats[statIndex]?.name
-                )?.stats[statIndex].name;
-                return {
-                  name: existingName || `Stat ${statIndex + 1}`,
-                  value: 5.0,
-                };
-              });
-
-            newStats = [...newStats, ...additionalStats];
-          } else if (newStats.length > newCount) {
-            // Remove excess stats
-            newStats = newStats.slice(0, newCount);
-          }
-
-          updatedPolyLists[i] = { ...polyList, stats: newStats };
-        }
-
-        setPolyLists(updatedPolyLists);
-        setStatCount(newCount);
-      } catch (error) {
-        console.error("Error updating stat count:", error);
-      }
-    },
-    [id, polyLists]
-  );
-
-  const handlePolyListSelect = useCallback((polyListId: string) => {
-    setCurrentPolyListId(polyListId);
-  }, []);
-
-  const handlePolyListUpdate = useCallback(
-    (polyListId: string, updates: Partial<PolyList>) => {
-      setPolyLists((prev) =>
-        prev.map((d) => (d.id === polyListId ? { ...d, ...updates } : d))
-      );
-    },
-    []
-  );
-
-  const handlePolyListDelete = useCallback(
-    (polyListId: string) => {
-      setPolyLists((prev) => prev.filter((d) => d.id !== polyListId));
-      if (currentPolyListId === polyListId) {
-        const remainingPolyLists = polyLists.filter((d) => d.id !== polyListId);
-        setCurrentPolyListId(remainingPolyLists[0]?.id || "");
-      }
-    },
-    [currentPolyListId, polyLists]
-  );
-
-  const handleAddPolyList = useCallback(() => {
-    const newPolyList: PolyList = {
-      id: `diagram-${Date.now()}`,
-      name: `Poly List ${polyLists.length + 1}`,
-      thumbnail: "/placeholder.svg",
-      stats: Array(statCount)
-        .fill(null)
-        .map((_, i) => ({
-          name: `Stat ${i + 1}`,
-          value: 5.0,
-        })),
-    };
-
-    setPolyLists((prev) => [...prev, newPolyList]);
+  // Handler functions - now much simpler
+  const handleAddPolyList = () => {
+    const newPolyList = createPolyList(
+      `Poly List ${polyLists.length + 1}`,
+      statCount
+    );
+    addPolyList(newPolyList);
     setCurrentPolyListId(newPolyList.id);
-  }, [polyLists.length, statCount]);
+  };
 
-  // Drag logic for left sidebar
+  const handlePolyListDelete = (polyListId: string) => {
+    deletePolyList(polyListId);
+  };
+
+  const handleStatChange = (statIndex: number, newValue: number) => {
+    if (currentPolyList) {
+      updateStat(currentPolyList.id, statIndex, { value: newValue });
+    }
+  };
+
+  const handleStatUpdate = (
+    index: number,
+    change: { name?: string; value?: number }
+  ) => {
+    if (currentPolyList) {
+      updateStat(currentPolyList.id, index, change);
+    }
+  };
+
+  const handleStatCountChange = (newCount: number) => {
+    // Use the existing store logic for updating stat count
+    useTierListDataStore.getState().setStatCount(newCount);
+  };
+
+  // Drag logic for sidebars
   const handleLeftDrag = (e: React.MouseEvent) => {
     e.preventDefault();
     const startX = e.clientX;
-    const startWidth = leftSidebarWidth;
+    const startWidth = leftSidebar.width;
     const onMouseMove = (moveEvent: MouseEvent) => {
       const newWidth = Math.min(
         Math.max(startWidth + (moveEvent.clientX - startX), minSidebarWidth),
@@ -282,11 +151,10 @@ export default function TierListLayout({
     window.addEventListener("mouseup", onMouseUp);
   };
 
-  // Drag logic for right sidebar
   const handleRightDrag = (e: React.MouseEvent) => {
     e.preventDefault();
     const startX = e.clientX;
-    const startWidth = rightSidebarWidth;
+    const startWidth = rightSidebar.width;
     const onMouseMove = (moveEvent: MouseEvent) => {
       const newWidth = Math.min(
         Math.max(startWidth - (moveEvent.clientX - startX), minSidebarWidth),
@@ -302,6 +170,18 @@ export default function TierListLayout({
     window.addEventListener("mouseup", onMouseUp);
   };
 
+  // Show loading state while hydrating
+  if (!hasHydrated) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading tier list...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Header
@@ -315,24 +195,23 @@ export default function TierListLayout({
         <div
           ref={leftSidebarRef}
           style={{
-            width: leftSidebarCollapsed ? 24 : leftSidebarWidth,
-            minWidth: leftSidebarCollapsed ? 24 : minSidebarWidth,
-            maxWidth: leftSidebarCollapsed ? 24 : maxSidebarWidth,
+            width: leftSidebar.collapsed ? 24 : leftSidebar.width,
+            minWidth: leftSidebar.collapsed ? 24 : minSidebarWidth,
+            maxWidth: leftSidebar.collapsed ? 24 : maxSidebarWidth,
             transition: "width 0.2s cubic-bezier(.4,1.2,.6,1)",
             position: "relative",
             zIndex: 10,
           }}
           className="border-r bg-white flex flex-col h-full relative"
         >
-          {!leftSidebarCollapsed && (
+          {!leftSidebar.collapsed && (
             <PolyListList
               polyLists={sortedPolyLists}
               currentPolyListId={currentPolyListId}
-              onPolyListSelect={handlePolyListSelect}
+              onPolyListSelect={setCurrentPolyListId}
               onAddPolyList={handleAddPolyList}
             />
           )}
-          {/* Collapse/Expand Button */}
           <button
             className="absolute top-1/2 right-0 -translate-y-1/2 z-20 bg-white border border-slate-200 rounded-full shadow p-1 hover:bg-slate-100 focus:outline-none"
             style={{
@@ -343,19 +222,18 @@ export default function TierListLayout({
               alignItems: "center",
               justifyContent: "center",
             }}
-            onClick={() => setLeftSidebarCollapsed((c) => !c)}
+            onClick={toggleLeftSidebar}
             aria-label={
-              leftSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"
+              leftSidebar.collapsed ? "Expand sidebar" : "Collapse sidebar"
             }
           >
-            {leftSidebarCollapsed ? (
+            {leftSidebar.collapsed ? (
               <ChevronRight size={16} />
             ) : (
               <ChevronLeft size={16} />
             )}
           </button>
-          {/* Draggable Handle */}
-          {!leftSidebarCollapsed && (
+          {!leftSidebar.collapsed && (
             <div
               onMouseDown={handleLeftDrag}
               className="absolute top-0 right-0 h-full w-2 cursor-ew-resize z-30"
@@ -369,27 +247,9 @@ export default function TierListLayout({
           <MainContent
             polyLists={polyLists}
             currentPolyListId={currentPolyListId}
-            onPolyListSelect={handlePolyListSelect}
+            onPolyListSelect={setCurrentPolyListId}
             onPolyListDelete={handlePolyListDelete}
-            onPolyListNameChange={(id, name) =>
-              handlePolyListUpdate(id, { name })
-            }
-            onStatChange={(statIndex, newValue) => {
-              if (currentPolyList) {
-                const updatedStats = [...currentPolyList.stats];
-                updatedStats[statIndex] = {
-                  ...updatedStats[statIndex],
-                  value: newValue,
-                };
-                handlePolyListUpdate(currentPolyList.id, {
-                  stats: updatedStats,
-                });
-              }
-            }}
-            onStatSelect={(statIndex) => {
-              setSelectedStatIndex(statIndex);
-            }}
-            isDraggable={isDraggable}
+            onPolyListNameChange={(id, name) => updatePolyList(id, { name })}
           />
         </div>
 
@@ -397,44 +257,21 @@ export default function TierListLayout({
         <div
           ref={rightSidebarRef}
           style={{
-            width: rightSidebarCollapsed ? 24 : rightSidebarWidth,
-            minWidth: rightSidebarCollapsed ? 24 : minSidebarWidth,
-            maxWidth: rightSidebarCollapsed ? 24 : maxSidebarWidth,
+            width: rightSidebar.collapsed ? 24 : rightSidebar.width,
+            minWidth: rightSidebar.collapsed ? 24 : minSidebarWidth,
+            maxWidth: rightSidebar.collapsed ? 24 : maxSidebarWidth,
             transition: "width 0.2s cubic-bezier(.4,1.2,.6,1)",
             position: "relative",
             zIndex: 10,
           }}
           className="border-l bg-white flex flex-col h-full relative"
         >
-          {!rightSidebarCollapsed && (
+          {!rightSidebar.collapsed && (
             <Sidebar
-              statCount={statCount}
               onStatCountChange={handleStatCountChange}
-              currentPolyList={currentPolyList}
-              statNames={statNames}
-              selectedStatIndex={selectedStatIndex}
-              onStatChange={(index, change) => {
-                if (currentPolyList) {
-                  const updatedStats = [...currentPolyList.stats];
-                  updatedStats[index] = {
-                    ...updatedStats[index],
-                    ...change,
-                  };
-                  handlePolyListUpdate(currentPolyList.id, {
-                    stats: updatedStats,
-                  });
-                }
-              }}
-              onSortingChange={setSortingConfigs}
-              polyLists={sortedPolyLists}
-              currentPolyListId={currentPolyListId}
-              onPolyListSelect={handlePolyListSelect}
-              onAddPolyList={handleAddPolyList}
-              isDraggable={isDraggable}
               onDraggableToggle={setIsDraggable}
             />
           )}
-          {/* Collapse/Expand Button */}
           <button
             className="absolute top-1/2 left-0 -translate-y-1/2 z-20 bg-white border border-slate-200 rounded-full shadow p-1 hover:bg-slate-100 focus:outline-none"
             style={{
@@ -445,19 +282,18 @@ export default function TierListLayout({
               alignItems: "center",
               justifyContent: "center",
             }}
-            onClick={() => setRightSidebarCollapsed((c) => !c)}
+            onClick={toggleRightSidebar}
             aria-label={
-              rightSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"
+              rightSidebar.collapsed ? "Expand sidebar" : "Collapse sidebar"
             }
           >
-            {rightSidebarCollapsed ? (
+            {rightSidebar.collapsed ? (
               <ChevronLeft size={16} />
             ) : (
               <ChevronRight size={16} />
             )}
           </button>
-          {/* Draggable Handle */}
-          {!rightSidebarCollapsed && (
+          {!rightSidebar.collapsed && (
             <div
               onMouseDown={handleRightDrag}
               className="absolute top-0 left-0 h-full w-2 cursor-ew-resize z-30"
@@ -473,31 +309,13 @@ export default function TierListLayout({
           <MainContent
             polyLists={polyLists}
             currentPolyListId={currentPolyListId}
-            onPolyListSelect={handlePolyListSelect}
+            onPolyListSelect={setCurrentPolyListId}
             onPolyListDelete={handlePolyListDelete}
-            onPolyListNameChange={(id, name) =>
-              handlePolyListUpdate(id, { name })
-            }
-            onStatChange={(statIndex, newValue) => {
-              if (currentPolyList) {
-                const updatedStats = [...currentPolyList.stats];
-                updatedStats[statIndex] = {
-                  ...updatedStats[statIndex],
-                  value: newValue,
-                };
-                handlePolyListUpdate(currentPolyList.id, {
-                  stats: updatedStats,
-                });
-              }
-            }}
-            onStatSelect={(statIndex) => {
-              setSelectedStatIndex(statIndex);
-            }}
-            isDraggable={isDraggable}
+            onPolyListNameChange={(id, name) => updatePolyList(id, { name })}
           />
         </div>
 
-        <Sheet open={isOpen} onOpenChange={setIsOpen}>
+        <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
           <SheetTrigger asChild>
             <Button
               variant="outline"
@@ -509,29 +327,7 @@ export default function TierListLayout({
           </SheetTrigger>
           <SheetContent side="right" className="w-80">
             <Sidebar
-              statCount={statCount}
               onStatCountChange={handleStatCountChange}
-              currentPolyList={currentPolyList}
-              statNames={statNames}
-              selectedStatIndex={selectedStatIndex}
-              onStatChange={(index, change) => {
-                if (currentPolyList) {
-                  const updatedStats = [...currentPolyList.stats];
-                  updatedStats[index] = {
-                    ...updatedStats[index],
-                    ...change,
-                  };
-                  handlePolyListUpdate(currentPolyList.id, {
-                    stats: updatedStats,
-                  });
-                }
-              }}
-              onSortingChange={setSortingConfigs}
-              polyLists={sortedPolyLists}
-              currentPolyListId={currentPolyListId}
-              onPolyListSelect={handlePolyListSelect}
-              onAddPolyList={handleAddPolyList}
-              isDraggable={isDraggable}
               onDraggableToggle={setIsDraggable}
             />
           </SheetContent>

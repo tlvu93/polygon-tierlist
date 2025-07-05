@@ -23,9 +23,6 @@ interface MainContentProps {
   onPolyListSelect: (id: string) => void;
   onPolyListDelete?: (id: string) => void;
   onPolyListNameChange?: (id: string, name: string) => void;
-  onStatChange?: (statIndex: number, newValue: number) => void;
-  onStatSelect?: (statIndex: number | null) => void;
-  isDraggable?: boolean;
   showPolyListList?: boolean;
   sortedPolyLists?: PolyList[];
   onAddPolyList?: () => void;
@@ -37,9 +34,6 @@ export default function MainContent({
   onPolyListSelect,
   onPolyListDelete,
   onPolyListNameChange,
-  onStatChange,
-  onStatSelect,
-  isDraggable = false,
 }: MainContentProps) {
   const [view, setView] = useState<"polyList" | "table">("polyList");
   const [isEditingName, setIsEditingName] = useState(false);
@@ -66,21 +60,6 @@ export default function MainContent({
   const handleNextPolyList = () => {
     if (currentPolyListIndex < polyLists.length - 1) {
       onPolyListSelect(polyLists[currentPolyListIndex + 1].id);
-    }
-  };
-
-  // Convert stats to stats format for PolygonChart
-  const statsToStats = (polyList: PolyList) => {
-    const statsObject: { [key: string]: number } = {};
-    polyList.stats.forEach((stat) => {
-      statsObject[stat.name.toLowerCase().replace(/\s+/g, "_")] = stat.value;
-    });
-    return statsObject;
-  };
-
-  const handleStatChange = (statIndex: number, newValue: number) => {
-    if (onStatChange) {
-      onStatChange(statIndex, newValue);
     }
   };
 
@@ -155,12 +134,7 @@ export default function MainContent({
           >
             <div className="relative w-full h-full flex items-center justify-center">
               {currentPolyList ? (
-                <PolygonChart
-                  stats={statsToStats(currentPolyList)}
-                  onStatChange={handleStatChange}
-                  onStatSelect={onStatSelect}
-                  isDraggable={isDraggable}
-                />
+                <PolygonChart />
               ) : (
                 <span className="absolute inset-0 flex items-center justify-center text-slate-400">
                   No poly list selected

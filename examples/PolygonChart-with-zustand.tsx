@@ -14,6 +14,7 @@ import {
   useCurrentPolyList,
   useIsDraggable,
   useDragState,
+  useChartSettings,
   useTierListDataStore,
   useTierListUIStore,
 } from "@/stores";
@@ -34,8 +35,9 @@ function useIsMobile() {
   return isMobile;
 }
 
-// Simplified props - most data now comes from stores
 interface PolygonChartProps extends React.HTMLAttributes<HTMLDivElement> {
+  // Most props are now handled by Zustand stores
+  // Only keep props that are truly specific to this component instance
   hideLabels?: boolean;
   isPreview?: boolean;
 }
@@ -52,6 +54,7 @@ export function PolygonChart({
   const currentPolyList = useCurrentPolyList();
   const isDraggable = useIsDraggable();
   const dragState = useDragState();
+  const chartSettings = useChartSettings();
 
   // Get store actions
   const updateStat = useTierListDataStore((state) => state.updateStat);
@@ -60,22 +63,31 @@ export function PolygonChart({
   );
   const setDragState = useTierListUIStore((state) => state.setDragState);
 
-  // Transform currentPolyList stats into chart data
+  // Use chart settings from store if not overridden by props
+  const actualHideLabels = hideLabels || chartSettings.hideLabels;
+  const actualIsPreview = isPreview || chartSettings.isPreview;
+
+  // Transform stats into chart data
   const data = currentPolyList
-    ? currentPolyList.stats.map((stat) => ({
-        subject: stat.name.toUpperCase(),
-        fullName: stat.name.toUpperCase(),
-        value: stat.value,
+    ? Object.entries(
+        currentPolyList.stats.reduce((acc, stat) => {
+          acc[stat.name] = stat.value;
+          return acc;
+        }, {} as { [key: string]: number })
+      ).map(([key, value]) => ({
+        subject: key.toUpperCase(),
+        fullName: key.toUpperCase(),
+        value: value,
       }))
     : [];
 
   const handleMouseDown = useCallback(
     (index: number) => {
-      if (!isDraggable || isPreview) return;
+      if (!isDraggable || actualIsPreview) return;
       console.log("Mouse down on stat:", index);
       setDragState(true, index);
     },
-    [isDraggable, isPreview, setDragState]
+    [isDraggable, actualIsPreview, setDragState]
   );
 
   const handleMouseMove = useCallback(
@@ -84,7 +96,7 @@ export function PolygonChart({
         !dragState.isDragging ||
         dragState.dragIndex === null ||
         !isDraggable ||
-        isPreview
+        actualIsPreview
       ) {
         return;
       }
@@ -98,22 +110,11 @@ export function PolygonChart({
 
       // Calculate distance from center
       const distance = Math.sqrt(mouseX * mouseX + mouseY * mouseY);
-      const maxRadius = (Math.min(rect.width, rect.height) / 2) * 0.8; // 80% of the chart radius
+      const maxRadius = (Math.min(rect.width, rect.height) / 2) * 0.8;
 
       // Calculate new value based on distance (0-10 scale)
       const normalizedDistance = Math.min(distance / maxRadius, 1);
-      const newValue = Math.round(normalizedDistance * 10 * 10) / 10; // Round to 1 decimal place
-
-      console.log(
-        "Dragging stat:",
-        dragState.dragIndex,
-        "new value:",
-        newValue,
-        "distance:",
-        distance,
-        "maxRadius:",
-        maxRadius
-      );
+      const newValue = Math.round(normalizedDistance * 10 * 10) / 10;
 
       // Update the stat using Zustand store
       if (currentPolyList) {
@@ -126,7 +127,7 @@ export function PolygonChart({
       dragState.isDragging,
       dragState.dragIndex,
       isDraggable,
-      isPreview,
+      actualIsPreview,
       updateStat,
       currentPolyList,
     ]
@@ -146,8 +147,8 @@ export function PolygonChart({
     <div
       className={cn(
         "w-full h-full bg-slate-900/95 rounded-lg flex flex-col",
-        isPreview ? "p-1" : "p-1 sm:p-4",
-        isDraggable && !isPreview ? "cursor-crosshair" : "",
+        actualIsPreview ? "p-1" : "p-1 sm:p-4",
+        isDraggable && !actualIsPreview ? "cursor-crosshair" : "",
         className
       )}
       style={{
@@ -160,8 +161,7 @@ export function PolygonChart({
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseLeave}
       onClick={(e) => {
-        // Only deselect if clicking on the container itself (not child elements)
-        if (e.target === e.currentTarget && !isPreview) {
+        if (e.target === e.currentTarget && !actualIsPreview) {
           setSelectedStatIndex(null);
         }
       }}
@@ -169,19 +169,18 @@ export function PolygonChart({
     >
       <div
         className="flex-1"
-        style={{ minHeight: isPreview ? "48px" : "200px" }}
+        style={{ minHeight: actualIsPreview ? "48px" : "200px" }}
       >
         <div
           style={{
             width: "100%",
-            height: isPreview ? "48px" : "100%",
-            maxWidth: isPreview ? "none" : "800px",
+            height: actualIsPreview ? "48px" : "100%",
+            maxWidth: actualIsPreview ? "none" : "800px",
             margin: "0 auto",
-            minHeight: isPreview ? "48px" : "200px",
+            minHeight: actualIsPreview ? "48px" : "200px",
           }}
           onClick={() => {
-            // Deselect when clicking on the chart area
-            if (!isPreview) {
+            if (!actualIsPreview) {
               setSelectedStatIndex(null);
             }
           }}
@@ -190,12 +189,12 @@ export function PolygonChart({
             <RadarChart
               cx="50%"
               cy="50%"
-              outerRadius={isPreview ? "130%" : isMobile ? "90%" : "80%"}
+              outerRadius={actualIsPreview ? "130%" : isMobile ? "90%" : "80%"}
               data={data}
             >
               <PolarGrid
                 gridType="polygon"
-                stroke="rgba(209, 213, 219, 0.2)" // Slightly more visible grid lines
+                stroke="rgba(209, 213, 219, 0.2)"
                 strokeWidth={1}
                 radialLines={true}
               />
@@ -205,7 +204,7 @@ export function PolygonChart({
                 tickCount={2}
                 tick={false}
               />
-              {!hideLabels && (
+              {!actualHideLabels && (
                 <PolarAngleAxis
                   dataKey="subject"
                   tick={(props) => {
@@ -221,13 +220,13 @@ export function PolygonChart({
                           y={y}
                           textAnchor={textAnchor}
                           fill="rgb(229, 231, 235)"
-                          fontSize={isPreview ? 12 : isMobile ? 9 : 12}
+                          fontSize={actualIsPreview ? 12 : isMobile ? 9 : 12}
                           style={{
-                            cursor: !isPreview ? "pointer" : "default",
+                            cursor: !actualIsPreview ? "pointer" : "default",
                           }}
                           onClick={(e) => {
-                            e.stopPropagation(); // Prevent bubbling to container
-                            if (!isPreview) {
+                            e.stopPropagation();
+                            if (!actualIsPreview) {
                               setSelectedStatIndex(statIndex);
                             }
                           }}
@@ -242,13 +241,13 @@ export function PolygonChart({
               <Radar
                 name="Stats"
                 dataKey="value"
-                stroke="#ea580c" // Deeper orange stroke
-                strokeWidth={isPreview ? 1 : 2}
-                fill="#ea580c" // Deeper orange fill
-                fillOpacity={0.2} // Slightly higher opacity for better visibility
+                stroke="#ea580c"
+                strokeWidth={actualIsPreview ? 1 : 2}
+                fill="#ea580c"
+                fillOpacity={0.2}
                 dot={(props) => {
                   const { cx, cy } = props;
-                  const size = isPreview ? 1 : isMobile ? 4 : 8;
+                  const size = actualIsPreview ? 1 : isMobile ? 4 : 8;
                   const isActive = dragState.dragIndex === props.index;
 
                   return (
@@ -256,25 +255,25 @@ export function PolygonChart({
                       key={`dot-${cx}-${cy}-${props.index}`}
                       onMouseDown={(e) => {
                         e.preventDefault();
-                        e.stopPropagation(); // Prevent bubbling to container
+                        e.stopPropagation();
                         handleMouseDown(props.index);
                       }}
                       onClick={(e) => {
-                        e.stopPropagation(); // Prevent bubbling to container
-                        // Deselect when clicking on draggable dots
-                        if (!isPreview) {
+                        e.stopPropagation();
+                        if (!actualIsPreview) {
                           setSelectedStatIndex(null);
                         }
                       }}
                       style={{
-                        cursor: isDraggable && !isPreview ? "grab" : "default",
+                        cursor:
+                          isDraggable && !actualIsPreview ? "grab" : "default",
                       }}
                     >
                       <circle
                         key={`outer-${cx}-${cy}-${props.index}`}
                         cx={cx}
                         cy={cy}
-                        r={isPreview ? size + 1 : size + 2}
+                        r={actualIsPreview ? size + 1 : size + 2}
                         fill="white"
                         opacity={0.25}
                       />
@@ -282,7 +281,7 @@ export function PolygonChart({
                         key={`middle-${cx}-${cy}-${props.index}`}
                         cx={cx}
                         cy={cy}
-                        r={isPreview ? size + 0.5 : size + 1}
+                        r={actualIsPreview ? size + 0.5 : size + 1}
                         fill={isActive ? "#f97316" : "#ea580c"}
                         opacity={0.7}
                       />
@@ -309,3 +308,10 @@ export function PolygonChart({
     </div>
   );
 }
+
+// Migration Notes:
+// 1. Removed props: stats, onStatChange, onStatSelect, isDraggable - now handled by stores
+// 2. Added store subscriptions to replace prop drilling
+// 3. Component is now much simpler and automatically stays in sync with global state
+// 4. Still supports override props for specific use cases (hideLabels, isPreview)
+// 5. No need to pass callbacks down through multiple component levels

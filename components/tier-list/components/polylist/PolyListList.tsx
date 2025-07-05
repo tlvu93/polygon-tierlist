@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { PolyList } from "../../types";
 import { PolygonChart } from "../chart/PolygonChart";
+import { useTierListDataStore } from "@/stores";
 
 interface PolyListListProps {
   polyLists: PolyList[];
@@ -12,21 +13,36 @@ interface PolyListListProps {
   onAddPolyList: () => void;
 }
 
+const PolyListPreview = ({ polyList }: { polyList: PolyList }) => {
+  const originalCurrentPolyListId = useTierListDataStore(
+    (state) => state.currentPolyListId
+  );
+
+  return (
+    <div
+      className="w-16 aspect-square"
+      onMouseEnter={() => {
+        // Temporarily set this polyList as current for preview
+        useTierListDataStore.setState({ currentPolyListId: polyList.id });
+      }}
+      onMouseLeave={() => {
+        // Restore original current polyList
+        useTierListDataStore.setState({
+          currentPolyListId: originalCurrentPolyListId,
+        });
+      }}
+    >
+      <PolygonChart hideLabels isPreview />
+    </div>
+  );
+};
+
 export default function PolyListList({
   polyLists,
   currentPolyListId,
   onPolyListSelect,
   onAddPolyList,
 }: PolyListListProps) {
-  // Convert stats to stats format for PolygonChart preview
-  const statsToStats = (polyList: PolyList) => {
-    const statsObject: { [key: string]: number } = {};
-    polyList.stats.forEach((stat) => {
-      statsObject[stat.name.toLowerCase().replace(/\s+/g, "_")] = stat.value;
-    });
-    return statsObject;
-  };
-
   return (
     <div className="h-full w-full border-r bg-slate-100 overflow-auto">
       <div className="h-full flex flex-col p-3">
@@ -57,13 +73,7 @@ export default function PolyListList({
               `}
             >
               <div className="flex items-center gap-2">
-                <div className="w-16 aspect-square">
-                  <PolygonChart
-                    stats={statsToStats(polyList)}
-                    hideLabels
-                    isPreview
-                  />
-                </div>
+                <PolyListPreview polyList={polyList} />
                 <div className="flex-1 min-w-0">
                   <div className="font-medium truncate">{polyList.name}</div>
                 </div>
