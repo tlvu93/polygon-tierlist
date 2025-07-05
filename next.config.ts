@@ -6,6 +6,7 @@ const nextConfig: NextConfig = {
     domains: ["lh3.googleusercontent.com"],
   },
   webpack: (config, { dev, isServer }) => {
+    console.log(`${dev} ${isServer}`);
     config.plugins.push(codeInspectorPlugin({ bundler: "webpack" }));
     return config;
   },
