@@ -1,9 +1,9 @@
 "use client";
 
-import { PolyList } from "./types";
-import { PolygonChart } from "./PolygonChart";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
+import { PolyList } from "../../types";
+import { PolygonChart } from "../chart/PolygonChart";
 
 interface PolyListListProps {
   polyLists: PolyList[];

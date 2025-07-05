@@ -2,13 +2,15 @@
 
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import Header from "@/app/components/Header";
-import MainContent from "./MainContent";
+
 import Sidebar from "./Sidebar";
-import PolyListList from "./PolyListList";
+
 import { PolyList } from "./types";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { PanelRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import PolyListList from "./components/polylist/PolyListList";
+import MainContent from "./components/content/MainContent";
 
 interface SortingConfig {
   stat: number;

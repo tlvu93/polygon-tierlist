@@ -14,8 +14,8 @@ import {
 } from "@/components/ui/table";
 
 import { ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
-import { PolyList } from "./types";
-import { PolygonChart } from "./PolygonChart";
+import { PolyList } from "../../types";
+import { PolygonChart } from "../chart/PolygonChart";
 
 interface MainContentProps {
   polyLists: PolyList[];

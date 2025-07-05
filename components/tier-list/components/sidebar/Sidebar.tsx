@@ -2,15 +2,13 @@
 
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { PolyList, Stat } from "./types";
-import PolyListList from "./components/polylist/PolyListList";
-import { useSidebarState } from "./components/sidebar/hooks";
-import { EditorTab, SortingTab, SharingTab } from "./components/sidebar/tabs";
-
-interface SortingConfig {
-  stat: number;
-  weight: number;
-}
+import { PolyList, Stat } from "../../types";
+import { useSidebarState } from "./hooks/useSidebarState";
+import { EditorTab } from "./tabs/EditorTab";
+import { SortingTab } from "./tabs/SortingTab";
+import { SharingTab } from "./tabs/SharingTab";
+import PolyListList from "../polylist/PolyListList";
+import { SortingConfig } from "../../types/sorting.types";
 
 interface SidebarProps {
   statCount: number;
