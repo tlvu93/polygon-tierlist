@@ -1,7 +1,18 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function NewTierList() {
+  const router = useRouter();
+
+  const handleCreateTierList = () => {
+    // For now, just redirect to dashboard
+    // In the future, this could create a new tier list and redirect to the editor
+    router.push("/dashboard");
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header */}
@@ -11,8 +22,8 @@ export default function NewTierList() {
             PolyTierList
           </Link>
           <div className="flex items-center gap-4">
-            <Link href="/auth/login">
-              <Button variant="outline">Sign in to save</Button>
+            <Link href="/dashboard">
+              <Button variant="outline">Go to Dashboard</Button>
             </Link>
           </div>
         </div>
@@ -27,7 +38,12 @@ export default function NewTierList() {
           <div className="space-y-6">
             <div className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center">
               <p className="text-gray-500">Tier list editor coming soon...</p>
-              <p className="text-sm text-gray-400 mt-2">Sign in to save and share your tier lists</p>
+              <p className="text-sm text-gray-400 mt-2">
+                Use the dashboard to create and manage your tier lists
+              </p>
+              <Button onClick={handleCreateTierList} className="mt-4">
+                Go to Dashboard
+              </Button>
             </div>
           </div>
         </div>

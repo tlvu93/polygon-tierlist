@@ -3,11 +3,11 @@
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Folder, X } from "lucide-react";
-import { GroupWithItems } from "./types";
+import { LocalGroup } from "@/utils/localStorage";
 import { useDroppable } from "@dnd-kit/core";
 
 interface GroupCardProps {
-  group: GroupWithItems;
+  group: LocalGroup;
   isSelected: boolean;
   onDelete: () => void;
 }
@@ -23,7 +23,9 @@ export function GroupCard({ group, isSelected, onDelete }: GroupCardProps) {
       ref={setDroppableRef}
       role="button"
       className={`group overflow-hidden border-2 shadow-md cursor-pointer transition-all duration-200 hover:shadow-lg ${
-        isSelected ? "border-blue-500 shadow-blue-200" : "border-transparent hover:border-gray-200"
+        isSelected
+          ? "border-blue-500 shadow-blue-200"
+          : "border-transparent hover:border-gray-200"
       } ${isOver ? "bg-blue-50 border-blue-200" : ""}`}
     >
       <CardContent className="p-3 flex items-center justify-between">
