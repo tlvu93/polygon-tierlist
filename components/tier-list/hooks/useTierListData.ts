@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useMemo } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { PolyList, PolyListStat } from "../types";
-import { SortingConfig } from "../types/layout.types";
+import { SortingConfig } from "../types/sorting.types";
 
 interface UseTierListDataProps {
   id?: string;

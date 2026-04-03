@@ -11,12 +11,6 @@ export interface LocalTierListLayoutProps {
   id?: string;
 }
 
-// Sorting configuration
-export interface SortingConfig {
-  stat: number;
-  weight: number;
-}
-
 // Sidebar configuration
 export interface SidebarConfig {
   width: number;

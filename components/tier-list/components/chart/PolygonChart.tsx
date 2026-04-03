@@ -9,7 +9,7 @@ import {
   PolarRadiusAxis,
   ResponsiveContainer,
 } from "recharts";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import {
   useCurrentPolyList,
   useIsDraggable,
@@ -47,6 +47,7 @@ export function PolygonChart({
   ...props
 }: PolygonChartProps) {
   const isMobile = useIsMobile();
+  const chartContainerRef = useRef<HTMLDivElement>(null);
 
   // Get data from Zustand stores instead of props
   const currentPolyList = useCurrentPolyList();
@@ -69,81 +70,123 @@ export function PolygonChart({
       }))
     : [];
 
-  const handleMouseDown = useCallback(
-    (index: number) => {
-      if (!isDraggable || isPreview) return;
-      console.log("Mouse down on stat:", index);
-      setDragState(true, index);
-    },
-    [isDraggable, isPreview, setDragState]
-  );
-
-  const handleMouseMove = useCallback(
-    (event: React.MouseEvent) => {
+  const updateDraggedStat = useCallback(
+    (clientX: number, clientY: number) => {
       if (
         !dragState.isDragging ||
         dragState.dragIndex === null ||
         !isDraggable ||
-        isPreview
+        isPreview ||
+        !currentPolyList ||
+        !chartContainerRef.current
       ) {
         return;
       }
 
-      const rect = event.currentTarget.getBoundingClientRect();
+      const rect = chartContainerRef.current.getBoundingClientRect();
       const centerX = rect.width / 2;
       const centerY = rect.height / 2;
 
-      const mouseX = event.clientX - rect.left - centerX;
-      const mouseY = event.clientY - rect.top - centerY;
-
-      // Calculate distance from center
-      const distance = Math.sqrt(mouseX * mouseX + mouseY * mouseY);
-      const maxRadius = (Math.min(rect.width, rect.height) / 2) * 0.8; // 80% of the chart radius
-
-      // Calculate new value based on distance (0-10 scale)
-      const normalizedDistance = Math.min(distance / maxRadius, 1);
-      const newValue = Math.round(normalizedDistance * 10 * 10) / 10; // Round to 1 decimal place
-
-      console.log(
-        "Dragging stat:",
-        dragState.dragIndex,
-        "new value:",
-        newValue,
-        "distance:",
-        distance,
-        "maxRadius:",
-        maxRadius
+      const mouseX = clientX - rect.left - centerX;
+      const mouseY = clientY - rect.top - centerY;
+      const statCount = currentPolyList.stats.length;
+      const angle = 90 - (dragState.dragIndex * 360) / statCount;
+      const angleInRadians = (-Math.PI / 180) * angle;
+      const axisX = Math.cos(angleInRadians);
+      const axisY = Math.sin(angleInRadians);
+      const projectedDistance = mouseX * axisX + mouseY * axisY;
+      const outerRadiusScale = isMobile ? 0.9 : 0.8;
+      const maxRadius = (Math.min(rect.width, rect.height) / 2) * outerRadiusScale;
+      const normalizedDistance = Math.min(
+        Math.max(projectedDistance / maxRadius, 0),
+        1
       );
+      const newValue = Math.round(normalizedDistance * 100) / 10;
 
-      // Update the stat using Zustand store
-      if (currentPolyList) {
-        updateStat(currentPolyList.id, dragState.dragIndex, {
-          value: newValue,
-        });
-      }
+      updateStat(currentPolyList.id, dragState.dragIndex, {
+        value: newValue,
+      });
     },
     [
-      dragState.isDragging,
+      currentPolyList,
       dragState.dragIndex,
+      dragState.isDragging,
+      isMobile,
       isDraggable,
       isPreview,
       updateStat,
-      currentPolyList,
     ]
   );
 
-  const handleMouseUp = useCallback(() => {
-    console.log("Mouse up, stopping drag");
+  const handlePointerDown = useCallback(
+    (index: number, clientX?: number, clientY?: number) => {
+      if (!isDraggable || isPreview) return;
+      setDragState(true, index);
+      if (typeof clientX === "number" && typeof clientY === "number") {
+        requestAnimationFrame(() => {
+          updateDraggedStat(clientX, clientY);
+        });
+      }
+    },
+    [isDraggable, isPreview, setDragState, updateDraggedStat]
+  );
+
+  const handlePointerUp = useCallback(() => {
     setDragState(false, null);
   }, [setDragState]);
 
-  const handleMouseLeave = useCallback(() => {
-    console.log("Mouse leave, stopping drag");
-    setDragState(false, null);
-  }, [setDragState]);
+  const blurFocusedChartElement = useCallback((target?: EventTarget | null) => {
+    requestAnimationFrame(() => {
+      const maybeBlur = target as
+        | (Element & { blur?: () => void })
+        | null
+        | undefined;
+      maybeBlur?.blur?.();
+
+      const activeElement = document.activeElement as
+        | (Element & { blur?: () => void })
+        | null;
+
+      if (activeElement?.closest(".polygon-chart")) {
+        activeElement.blur?.();
+      }
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!dragState.isDragging || isPreview) {
+      return;
+    }
+
+    const handleWindowPointerMove = (event: PointerEvent) => {
+      updateDraggedStat(event.clientX, event.clientY);
+    };
+
+    const handleWindowPointerEnd = (event: PointerEvent) => {
+      handlePointerUp();
+      blurFocusedChartElement(event.target);
+    };
+
+    window.addEventListener("pointermove", handleWindowPointerMove);
+    window.addEventListener("pointerup", handleWindowPointerEnd);
+    window.addEventListener("pointercancel", handleWindowPointerEnd);
+
+    return () => {
+      window.removeEventListener("pointermove", handleWindowPointerMove);
+      window.removeEventListener("pointerup", handleWindowPointerEnd);
+      window.removeEventListener("pointercancel", handleWindowPointerEnd);
+    };
+  }, [
+    blurFocusedChartElement,
+    dragState.isDragging,
+    handlePointerUp,
+    isPreview,
+    updateDraggedStat,
+  ]);
 
   return (
     <div
+      ref={chartContainerRef}
       className={cn(
         "w-full h-full bg-slate-900/95 rounded-lg flex flex-col",
         isPreview ? "p-1" : "p-1 sm:p-4",
@@ -156,9 +199,20 @@ export function PolygonChart({
         MozUserSelect: "none",
         msUserSelect: "none",
       }}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseLeave}
+      onPointerDownCapture={(event) => {
+        if (!isPreview) {
+          blurFocusedChartElement(event.target);
+        }
+      }}
+      onPointerMove={(event) => {
+        updateDraggedStat(event.clientX, event.clientY);
+      }}
+      onPointerUp={(event) => {
+        handlePointerUp();
+        if (!isPreview) {
+          blurFocusedChartElement(event.target);
+        }
+      }}
       onClick={(e) => {
         // Only deselect if clicking on the container itself (not child elements)
         if (e.target === e.currentTarget && !isPreview) {
@@ -192,6 +246,7 @@ export function PolygonChart({
               cy="50%"
               outerRadius={isPreview ? "130%" : isMobile ? "90%" : "80%"}
               data={data}
+              accessibilityLayer={false}
             >
               <PolarGrid
                 gridType="polygon"
@@ -221,6 +276,7 @@ export function PolygonChart({
                           y={y}
                           textAnchor={textAnchor}
                           fill="rgb(229, 231, 235)"
+                          focusable="false"
                           fontSize={isPreview ? 12 : isMobile ? 9 : 12}
                           style={{
                             cursor: !isPreview ? "pointer" : "default",
@@ -246,6 +302,8 @@ export function PolygonChart({
                 strokeWidth={isPreview ? 1 : 2}
                 fill="#ea580c" // Deeper orange fill
                 fillOpacity={0.2} // Slightly higher opacity for better visibility
+                activeDot={false}
+                isAnimationActive={false}
                 dot={(props) => {
                   const { cx, cy } = props;
                   const size = isPreview ? 1 : isMobile ? 4 : 8;
@@ -254,10 +312,12 @@ export function PolygonChart({
                   return (
                     <g
                       key={`dot-${cx}-${cy}-${props.index}`}
-                      onMouseDown={(e) => {
+                      focusable="false"
+                      onPointerDown={(e) => {
                         e.preventDefault();
                         e.stopPropagation(); // Prevent bubbling to container
-                        handleMouseDown(props.index);
+                        handlePointerDown(props.index, e.clientX, e.clientY);
+                        blurFocusedChartElement(e.target);
                       }}
                       onClick={(e) => {
                         e.stopPropagation(); // Prevent bubbling to container
@@ -271,12 +331,23 @@ export function PolygonChart({
                       }}
                     >
                       <circle
+                        key={`hit-${cx}-${cy}-${props.index}`}
+                        cx={cx}
+                        cy={cy}
+                        r={isPreview ? size + 4 : size + 8}
+                        fill="transparent"
+                        focusable="false"
+                        pointerEvents="all"
+                      />
+                      <circle
                         key={`outer-${cx}-${cy}-${props.index}`}
                         cx={cx}
                         cy={cy}
                         r={isPreview ? size + 1 : size + 2}
                         fill="white"
                         opacity={0.25}
+                        focusable="false"
+                        pointerEvents="none"
                       />
                       <circle
                         key={`middle-${cx}-${cy}-${props.index}`}
@@ -285,6 +356,8 @@ export function PolygonChart({
                         r={isPreview ? size + 0.5 : size + 1}
                         fill={isActive ? "#f97316" : "#ea580c"}
                         opacity={0.7}
+                        focusable="false"
+                        pointerEvents="none"
                       />
                       <circle
                         key={`inner-${cx}-${cy}-${props.index}`}
@@ -297,6 +370,8 @@ export function PolygonChart({
                             ? "drop-shadow(0 0 4px rgba(249, 115, 22, 0.5))"
                             : "none",
                         }}
+                        focusable="false"
+                        pointerEvents="none"
                       />
                     </g>
                   );

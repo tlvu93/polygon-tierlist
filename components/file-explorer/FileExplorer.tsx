@@ -308,7 +308,7 @@ export function FileExplorer({
       ? findFolderById(
           state.items,
           state.currentPath[state.currentPath.length - 1]
-        )?.name
+        )?.name ?? "Unknown Folder"
       : "Root";
 
   return (

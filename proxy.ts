@@ -1,7 +1,6 @@
-// middleware.ts
 import { NextResponse } from "next/server";
 
-export async function middleware() {
+export async function proxy() {
   // No authentication required - allow all routes
   return NextResponse.next();
 }

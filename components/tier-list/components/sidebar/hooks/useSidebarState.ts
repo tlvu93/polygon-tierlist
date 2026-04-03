@@ -25,7 +25,10 @@ export function useSidebarState({
   const [isPending, startTransition] = useTransition();
   const [sortingConfigs, setSortingConfigs] = useState<SortingConfig[]>([]);
   const [localStatNames, setLocalStatNames] = useState<string[]>(
-    currentPolyList?.stats.map((p) => p.name) || []
+    Array.from(
+      { length: statCount },
+      (_, i) => currentPolyList?.stats[i]?.name ?? `Stat ${i + 1}`
+    )
   );
   const [localStatValues, setLocalStatValues] = useState<number[]>(
     Array.from(
@@ -34,42 +37,71 @@ export function useSidebarState({
     )
   );
 
-  // Track if we're updating from external changes to prevent loops
-  const isUpdatingFromProps = useRef(false);
-
-  // Track the last polyList ID to detect actual changes
+  const pendingStatNames = useRef<Record<number, string>>({});
+  const pendingStatValues = useRef<Record<number, number>>({});
   const lastPolyListId = useRef<string | undefined>(currentPolyList?.id);
 
-  // Update local state when current polyList changes
   useEffect(() => {
-    if (currentPolyList && currentPolyList.id !== lastPolyListId.current) {
-      // Only update if it's actually a different polyList
-      isUpdatingFromProps.current = true;
-      lastPolyListId.current = currentPolyList.id;
+    const nextStatNames = Array.from(
+      { length: statCount },
+      (_, i) => currentPolyList?.stats[i]?.name ?? `Stat ${i + 1}`
+    );
+    const nextStatValues = Array.from(
+      { length: statCount },
+      (_, i) => currentPolyList?.stats[i]?.value ?? 5
+    );
+    const hasSwitchedPolyList = currentPolyList?.id !== lastPolyListId.current;
 
-      setLocalStatNames(currentPolyList.stats.map((p) => p.name));
-      setLocalStatValues(
-        Array.from(
-          { length: statCount },
-          (_, i) => currentPolyList.stats[i]?.value ?? 5
-        )
-      );
-
-      // Reset the flag after a small delay to allow state to settle
-      setTimeout(() => {
-        isUpdatingFromProps.current = false;
-      }, 100);
+    if (hasSwitchedPolyList) {
+      lastPolyListId.current = currentPolyList?.id;
+      pendingStatNames.current = {};
+      pendingStatValues.current = {};
+      setLocalStatNames(nextStatNames);
+      setLocalStatValues(nextStatValues);
+      return;
     }
-  }, [currentPolyList?.id, statCount]); // Only depend on ID and statCount
+
+    setLocalStatNames((prev) =>
+      nextStatNames.map((name, index) => {
+        const pendingName = pendingStatNames.current[index];
+
+        if (pendingName === undefined) {
+          return name;
+        }
+
+        if (name === pendingName) {
+          delete pendingStatNames.current[index];
+          return name;
+        }
+
+        return prev[index] ?? pendingName;
+      })
+    );
+
+    setLocalStatValues((prev) =>
+      nextStatValues.map((value, index) => {
+        const pendingValue = pendingStatValues.current[index];
+
+        if (pendingValue === undefined) {
+          return value;
+        }
+
+        if (value === pendingValue) {
+          delete pendingStatValues.current[index];
+          return value;
+        }
+
+        return prev[index] ?? pendingValue;
+      })
+    );
+  }, [currentPolyList, statCount]);
 
   const debouncedStatNameChange = useDebounce(
     useCallback(
       (index: number, name: string) => {
-        if (!isUpdatingFromProps.current) {
-          startTransition(() => {
-            onStatChange(index, { name });
-          });
-        }
+        startTransition(() => {
+          onStatChange(index, { name });
+        });
       },
       [onStatChange]
     ),
@@ -79,11 +111,9 @@ export function useSidebarState({
   const debouncedStatValueChange = useDebounce(
     useCallback(
       (index: number, value: number) => {
-        if (!isUpdatingFromProps.current) {
-          startTransition(() => {
-            onStatChange(index, { value });
-          });
-        }
+        startTransition(() => {
+          onStatChange(index, { value });
+        });
       },
       [onStatChange]
     ),
@@ -93,11 +123,9 @@ export function useSidebarState({
   const debouncedSortingChange = useDebounce(
     useCallback(
       (configs: SortingConfig[]) => {
-        if (!isUpdatingFromProps.current) {
-          startTransition(() => {
-            onSortingChange(configs);
-          });
-        }
+        startTransition(() => {
+          onSortingChange(configs);
+        });
       },
       [onSortingChange]
     ),
@@ -115,6 +143,7 @@ export function useSidebarState({
   // Custom handlers that update local state immediately
   const handleLocalStatNameChange = useCallback(
     (index: number, name: string) => {
+      pendingStatNames.current[index] = name;
       setLocalStatNames((prev) => {
         const newNames = [...prev];
         newNames[index] = name;
@@ -127,6 +156,7 @@ export function useSidebarState({
 
   const handleLocalStatValueChange = useCallback(
     (index: number, value: number) => {
+      pendingStatValues.current[index] = value;
       setLocalStatValues((prev) => {
         const newValues = [...prev];
         newValues[index] = value;

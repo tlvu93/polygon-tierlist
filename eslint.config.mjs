@@ -1,20 +1,35 @@
-// For more info, see https://github.com/storybookjs/eslint-plugin-storybook#configuration-flat-config-format
-import storybook from "eslint-plugin-storybook";
-
-import { dirname } from "path";
-import { fileURLToPath } from "url";
-import { FlatCompat } from "@eslint/eslintrc";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-const compat = new FlatCompat({
-  baseDirectory: __dirname,
-});
+import nextPlugin from "@next/eslint-plugin-next";
+import tseslint from "typescript-eslint";
 
 const eslintConfig = [
-  ...compat.extends("next/core-web-vitals", "next/typescript"),
-  ...storybook.configs["flat/recommended"]
+  {
+    ignores: [
+      ".next/**",
+      ".storybook/**",
+      "dist/**",
+      "next-env.d.ts",
+      "node_modules/**",
+      "rollup.config.js",
+      "src/**",
+      "stories/**",
+      "tailwind.config.mjs",
+      "vitest.config.ts",
+      "**/*.stories.ts",
+      "**/*.stories.tsx",
+    ],
+  },
+  ...tseslint.configs.recommended,
+  {
+    files: ["**/*.{js,jsx,ts,tsx}"],
+    plugins: {
+      "@next/next": nextPlugin,
+    },
+    rules: {
+      ...nextPlugin.configs["core-web-vitals"].rules,
+      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-unused-vars": "warn",
+    },
+  },
 ];
 
 export default eslintConfig;

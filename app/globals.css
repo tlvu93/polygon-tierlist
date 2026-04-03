@@ -1,6 +1,5 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@config "../tailwind.config.mjs";
 
 @layer base {
   :root {
@@ -75,3 +74,11 @@
   }
 }
 
+.polygon-chart,
+.polygon-chart *,
+.polygon-chart *:focus,
+.polygon-chart *:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+  -webkit-tap-highlight-color: transparent;
+}
