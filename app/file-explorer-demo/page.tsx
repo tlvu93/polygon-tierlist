@@ -35,7 +35,7 @@ export default function FileExplorerDemo() {
     }
   };
 
-  const customFolderIcon = (folder: FolderItem) => {
+  const customFolderIcon = () => {
     return <Folder className="h-8 w-8 text-yellow-500" />;
   };
 

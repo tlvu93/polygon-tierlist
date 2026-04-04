@@ -53,24 +53,6 @@ const findAndRemoveItem = (
   });
 };
 
-// Helper function to find parent folder recursively
-const findParentFolder = (
-  items: ExplorerItem[],
-  itemId: string,
-  parentId?: string
-): string | null => {
-  for (const item of items) {
-    if (item.type === "folder") {
-      if (item.items.some((child) => child.id === itemId)) {
-        return item.id;
-      }
-      const found = findParentFolder(item.items, itemId, item.id);
-      if (found) return found;
-    }
-  }
-  return parentId || null;
-};
-
 // Helper function to find item by ID recursively
 const findItemById = (
   items: ExplorerItem[],

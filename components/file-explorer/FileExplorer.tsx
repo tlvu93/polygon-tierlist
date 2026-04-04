@@ -19,10 +19,8 @@ import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import {
   FileExplorerProps,
   ExplorerItem,
-  FileItem,
   FolderItem,
   FileExplorerState,
-  FileExplorerEvents,
 } from "./types";
 import { FileExplorerHeader } from "./FileExplorerHeader";
 import { FileExplorerGrid } from "./FileExplorerGrid";
@@ -37,7 +35,6 @@ export function FileExplorer({
   onFolderClick,
   onFolderDoubleClick,
   onItemDelete,
-  onItemRename,
   renderFileIcon,
   renderFolderIcon,
   className = "",

@@ -14,10 +14,8 @@ export default function TierListLayout({
 
   const {
     tierListName,
-    statCount,
     currentPolyListId,
     polyLists,
-    currentPolyList,
     sortedPolyLists,
     setCurrentPolyListId,
     handleStatCountChange,
