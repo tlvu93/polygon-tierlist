@@ -11,13 +11,10 @@ import MainContent from "./components/content/MainContent";
 import {
   useTierListDataStore,
   useTierListUIStore,
-  useCurrentPolyList,
   useSortedPolyLists,
   useLeftSidebarState,
   useRightSidebarState,
   useIsSheetOpen,
-  useIsDraggable,
-  useSelectedStatIndex,
   useHasHydrated,
   createPolyList,
 } from "@/stores";
@@ -42,8 +39,6 @@ export default function TierListLayout({
     updatePolyList,
     deletePolyList,
     setCurrentPolyListId,
-    updateStat,
-    setSortingConfigs,
   } = useTierListDataStore();
 
   const {
@@ -52,18 +47,14 @@ export default function TierListLayout({
     setLeftSidebarWidth,
     setRightSidebarWidth,
     setIsDraggable,
-    setSelectedStatIndex,
     setIsSheetOpen,
   } = useTierListUIStore();
 
   // Get computed values from stores
-  const currentPolyList = useCurrentPolyList();
   const sortedPolyLists = useSortedPolyLists();
   const leftSidebar = useLeftSidebarState();
   const rightSidebar = useRightSidebarState();
   const isSheetOpen = useIsSheetOpen();
-  const isDraggable = useIsDraggable();
-  const selectedStatIndex = useSelectedStatIndex();
 
   const leftSidebarRef = useRef<HTMLDivElement>(null);
   const rightSidebarRef = useRef<HTMLDivElement>(null);
@@ -109,21 +100,6 @@ export default function TierListLayout({
 
   const handlePolyListDelete = (polyListId: string) => {
     deletePolyList(polyListId);
-  };
-
-  const handleStatChange = (statIndex: number, newValue: number) => {
-    if (currentPolyList) {
-      updateStat(currentPolyList.id, statIndex, { value: newValue });
-    }
-  };
-
-  const handleStatUpdate = (
-    index: number,
-    change: { name?: string; value?: number }
-  ) => {
-    if (currentPolyList) {
-      updateStat(currentPolyList.id, index, change);
-    }
   };
 
   const handleStatCountChange = (newCount: number) => {

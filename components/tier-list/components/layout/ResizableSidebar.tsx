@@ -1,6 +1,4 @@
 "use client";
-
-import { ReactNode } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useDragHandlers } from "../../hooks/useDragHandlers";
 import { ResizableSidebarProps } from "../../types/layout.types";
