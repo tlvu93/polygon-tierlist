@@ -136,15 +136,33 @@ Created `/file-explorer-demo` page showcasing:
 - Feature overview
 - Usage examples
 
-## Component Library Ready
+## Component Library Status: Not Yet Standalone
 
-The component is structured to be easily extracted into a separate npm package:
-
-1. **Self-contained**: All dependencies clearly defined
-2. **TypeScript**: Full type definitions included
-3. **Documentation**: Comprehensive README and examples
-4. **Testing**: Storybook stories for visual testing
-5. **Build ready**: Package.json configured for publishing
+> **Correction (2026-07-30):** This section previously claimed the package was
+> "Build ready" / standalone-publishable. That is not accurate today.
+> `FileCard.tsx`, `CreateItemDialog.tsx`, `FolderCard.tsx`, and
+> `FileExplorerHeader.tsx` all import shared UI primitives via the Next.js
+> path alias `@/components/ui/*` (e.g. `Button`, `Card`, `Input`, `Label`,
+> `Dialog`, `DropdownMenu`). That alias only resolves inside this Next.js
+> app's `tsconfig.json`/bundler config — it does not exist outside the
+> package boundary, so `components/file-explorer` **cannot build, lint, or
+> be published standalone** without either vendoring those UI primitives
+> into the package or replacing the aliased imports with a real dependency
+> (e.g. published shadcn components or a shared `ui` package). The
+> `package.json` has publishing scripts, but there is no `rollup.config.js`
+> (or any bundler config) in this directory, so `npm run build` /
+> `prepublishOnly` currently fail.
+>
+> What *is* true today:
+>
+> 1. **TypeScript**: type definitions are present and `tsc --noEmit` passes.
+> 2. **Documentation**: README and this doc exist.
+> 3. **Storybook stories**: `FileExplorer.stories.tsx` exists, but there is
+>    no `.storybook/` config in this directory, so `build-storybook` fails
+>    until one is added.
+>
+> Extracting this into a real standalone package is a genuine effort (see
+> "Next Steps" below) — it has not been done.
 
 ## Key Differences from Original Dashboard
 
@@ -179,12 +197,19 @@ To use this in your existing dashboard:
 
 ## Next Steps for Component Library
 
-1. **Extract to separate repo**
-2. **Add comprehensive tests**
-3. **Set up CI/CD pipeline**
-4. **Publish to npm**
-5. **Add more storage adapters** (Supabase, Firebase, etc.)
-6. **Add more customization options**
+1. **Remove the `@/components/ui/*` path-alias dependency** — either vendor
+   the primitives into this package or depend on a real published UI
+   package. This blocks everything below.
+2. **Add a bundler config** (rollup/tsup/etc.) so `build`/`prepublishOnly`
+   actually produce output.
+3. **Add a `.storybook/` config** in this directory so `build-storybook`
+   works standalone.
+4. **Extract to separate repo**
+5. **Add comprehensive tests**
+6. **Set up CI/CD pipeline**
+7. **Publish to npm**
+8. **Add more storage adapters** (Supabase, Firebase, etc.)
+9. **Add more customization options**
 
 ## Benefits
 
