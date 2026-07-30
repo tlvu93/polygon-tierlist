@@ -32,6 +32,12 @@ export function SortableItem({
     opacity: isDragging ? 0.5 : 1,
   };
 
+  // `attributes`/`listeners` from useSortable already provide a keyboard
+  // alternative for reordering (Space to pick up/drop, arrow keys to move,
+  // Escape to cancel) plus role="button" and tabIndex. Space is consumed
+  // by dnd-kit, so Enter is free to use here as the keyboard equivalent of
+  // onDoubleClick (open), keeping keyboard users at parity with mouse
+  // users who can double-click.
   return (
     <div
       ref={setNodeRef}
@@ -40,6 +46,13 @@ export function SortableItem({
       {...listeners}
       onClick={onClick}
       onDoubleClick={onDoubleClick}
+      onKeyDown={(e) => {
+        listeners?.onKeyDown?.(e);
+        if (e.key === "Enter") {
+          e.preventDefault();
+          onDoubleClick?.();
+        }
+      }}
       className="cursor-pointer"
     >
       {children}

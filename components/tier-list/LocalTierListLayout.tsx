@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { useShallow } from "zustand/react/shallow";
 import Header from "@/app/components/Header";
 import Sidebar from "./Sidebar";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -28,7 +29,16 @@ export default function TierListLayout({
   tierListName: initialTierListName = "Headphone Comparison",
   id,
 }: TierListLayoutProps) {
-  // Get data from stores
+  // Get data from stores. Calling `useTierListDataStore()` /
+  // `useTierListUIStore()` with no selector subscribes to the *entire*
+  // store, so this top-level layout component (which renders the whole
+  // page tree: sidebars, PolyListList, MainContent) would re-render on
+  // every single store mutation — including ones this component doesn't
+  // even read, like `sortingConfigs` or `lastModified` (which every data
+  // mutation touches) or UI state like `dragState`/`chartSettings`.
+  // `useShallow` selects only the fields this component actually needs
+  // and only re-renders when one of those specific fields' reference
+  // changes.
   const {
     tierListName,
     statCount,
@@ -39,7 +49,19 @@ export default function TierListLayout({
     updatePolyList,
     deletePolyList,
     setCurrentPolyListId,
-  } = useTierListDataStore();
+  } = useTierListDataStore(
+    useShallow((state) => ({
+      tierListName: state.tierListName,
+      statCount: state.statCount,
+      polyLists: state.polyLists,
+      currentPolyListId: state.currentPolyListId,
+      setTierListName: state.setTierListName,
+      addPolyList: state.addPolyList,
+      updatePolyList: state.updatePolyList,
+      deletePolyList: state.deletePolyList,
+      setCurrentPolyListId: state.setCurrentPolyListId,
+    }))
+  );
 
   const {
     toggleLeftSidebar,
@@ -48,7 +70,16 @@ export default function TierListLayout({
     setRightSidebarWidth,
     setIsDraggable,
     setIsSheetOpen,
-  } = useTierListUIStore();
+  } = useTierListUIStore(
+    useShallow((state) => ({
+      toggleLeftSidebar: state.toggleLeftSidebar,
+      toggleRightSidebar: state.toggleRightSidebar,
+      setLeftSidebarWidth: state.setLeftSidebarWidth,
+      setRightSidebarWidth: state.setRightSidebarWidth,
+      setIsDraggable: state.setIsDraggable,
+      setIsSheetOpen: state.setIsSheetOpen,
+    }))
+  );
 
   // Get computed values from stores
   const sortedPolyLists = useSortedPolyLists();

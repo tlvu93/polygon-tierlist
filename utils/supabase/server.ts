@@ -6,8 +6,6 @@ import { cookies } from "next/headers";
 
 export async function createClient() {
   try {
-    console.log("Starting Supabase client creation...");
-
     // Check environment variables
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
       throw new Error("NEXT_PUBLIC_SUPABASE_URL is not defined");
@@ -17,18 +15,14 @@ export async function createClient() {
     }
 
     const cookieStore = await cookies();
-    console.log("Cookie store initialized");
 
     const client = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY, {
       cookies: {
         get(name: string) {
-          const cookie = cookieStore.get(name);
-          // console.log(`Getting cookie: ${name}`, cookie ? "found" : "not found");
-          return cookie?.value;
+          return cookieStore.get(name)?.value;
         },
         set(name: string, value: string, options: CookieOptions) {
           try {
-            console.log(`Setting cookie: ${name}`);
             cookieStore.set({ name, value, ...options });
           } catch (error) {
             console.error(`Error setting cookie ${name}:`, error);
@@ -37,7 +31,6 @@ export async function createClient() {
         },
         remove(name: string, options: CookieOptions) {
           try {
-            console.log(`Removing cookie: ${name}`);
             cookieStore.delete({ name, ...options });
           } catch (error) {
             console.error(`Error removing cookie ${name}:`, error);
@@ -47,20 +40,12 @@ export async function createClient() {
       },
     });
 
-    // Test the client connection
-    const { data, error } = await client.auth.getSession();
-    console.log("Auth session test:", {
-      hasSession: !!data.session,
-      error: error?.message,
-    });
-
     return client;
   } catch (error) {
     console.error("Error creating Supabase client:", {
       error,
       type: error?.constructor?.name,
       message: error instanceof Error ? error.message : "Unknown error",
-      stack: error instanceof Error ? error.stack : undefined,
     });
     throw error;
   }
@@ -209,88 +194,45 @@ export async function getUserContent(userId: string) {
   "use server";
 
   try {
-    console.log("Creating Supabase client...");
     const supabase = await createClient();
-    console.log("Supabase client created successfully");
 
-    console.log("Fetching groups...");
     const groupsResult = await supabase.from("groups").select("*").eq("user_id", userId).order("position");
-
-    console.log("Groups query result:", {
-      data: groupsResult.data,
-      error: groupsResult.error,
-      status: groupsResult.status,
-      statusText: groupsResult.statusText,
-      count: groupsResult.count,
-    });
-
     if (groupsResult.error) {
       console.error("Error in groups query:", groupsResult.error);
       throw groupsResult.error;
     }
 
-    console.log("Fetching tier lists...");
     const tierListsResult = await supabase
       .from("tier_lists")
       .select("*")
       .eq("user_id", userId)
       .order("position", { nullsFirst: true });
-
-    console.log("Tier lists query result:", {
-      data: tierListsResult.data,
-      error: tierListsResult.error,
-      status: tierListsResult.status,
-      statusText: tierListsResult.statusText,
-      count: tierListsResult.count,
-    });
-
     if (tierListsResult.error) {
       console.error("Error in tier lists query:", tierListsResult.error);
       throw tierListsResult.error;
     }
 
-    console.log("Fetching group-tierlist relationships...");
+    // Not filtered by userId here because group_tier_lists has no user_id
+    // column of its own - ownership is scoped through `groups`/`tier_lists`.
+    // Row Level Security (see supabase/migrations/20240131_add_group_tier_list_relations.sql)
+    // is what actually restricts this to the current user's rows.
     const relationResult = await supabase.from("group_tier_lists").select("*").order("position");
-
-    console.log("Group-tierlist relationships query result:", {
-      data: relationResult.data,
-      error: relationResult.error,
-      status: relationResult.status,
-      statusText: relationResult.statusText,
-      count: relationResult.count,
-    });
-
     if (relationResult.error) {
       console.error("Error in relationships query:", relationResult.error);
       throw relationResult.error;
     }
 
-    const result = {
+    return {
       groups: groupsResult.data || [],
       tierLists: tierListsResult.data || [],
       groupTierLists: relationResult.data || [],
     };
-
-    console.log("Successfully fetched all content:", result);
-    return result;
   } catch (error: unknown) {
-    console.error("Detailed error in getUserContent:", {
-      error,
-      type: error?.constructor?.name,
-      keys: error ? Object.keys(error) : [],
-      toString: error?.toString?.(),
-      stack: error instanceof Error ? error.stack : undefined,
-    });
-
     const message = error instanceof Error ? error.message : "Unknown error";
-    if (error instanceof PostgrestError) {
-      console.error("PostgrestError details:", {
-        details: error.details,
-        hint: error.hint,
-        code: error.code,
-        message: error.message,
-      });
-    }
+    console.error("Error in getUserContent:", {
+      message,
+      code: error instanceof PostgrestError ? error.code : undefined,
+    });
     throw new Error(`Failed to fetch user content: ${message}`);
   }
 }

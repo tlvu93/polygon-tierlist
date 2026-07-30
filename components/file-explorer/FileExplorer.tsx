@@ -68,12 +68,7 @@ export function FileExplorer({
     })
   );
 
-  // Load items on mount and when path changes
-  useEffect(() => {
-    loadItems();
-  }, [state.currentPath]);
-
-  const loadItems = async () => {
+  const loadItems = useCallback(async () => {
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
     try {
       const items = await storage.getItems();
@@ -86,7 +81,12 @@ export function FileExplorer({
         isLoading: false,
       }));
     }
-  };
+  }, [storage]);
+
+  // Load items on mount and when path changes
+  useEffect(() => {
+    loadItems();
+  }, [state.currentPath, loadItems]);
 
   const getCurrentItems = (): ExplorerItem[] => {
     if (state.currentPath.length === 0) {
